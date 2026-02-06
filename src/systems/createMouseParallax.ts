@@ -22,8 +22,8 @@ export const createMouseParallax = (width: number, height: number): MouseParalla
   let quickY: gsap.QuickToFunc | null = null;
 
   const onMouseMove = (e: MouseEvent) => {
-    const targetX = e.clientX / (4.5 * w);
-    const targetY = e.clientY / (4.5 * h);
+    const targetX = e.clientX / (0.5 * w);
+    const targetY = e.clientY / (0.5 * h);
     quickX?.(targetX);
     quickY?.(targetY);
   };
@@ -55,7 +55,7 @@ export const createMouseParallax = (width: number, height: number): MouseParalla
       const deltaY = prevY - state.y;
       prevX = state.x;
       prevY = state.y;
-      cameraControls.rotate(0.5 * deltaX, 0.2 * deltaY, true);
+      cameraControls.rotate(1 * deltaX, 0.5 * deltaY, true);
     }
   };
 };

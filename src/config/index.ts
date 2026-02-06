@@ -1,15 +1,13 @@
 // Configuration constants
-
-//export const BG_COLOR = 0x000835;
-export const BG_COLOR = 0x1d559f;
+export const BG_COLOR = 0x000835;
 
 // source.js uses 1/7.7 for all model scaling
 export const SCALE = 1 / 7.7;
 
 export const COLORS = {
-  BLUE: 0x1367BE,
-  ORANGE: 0xFF4200,
-  WHITE: 0xFFFFFF
+  BLUE: 0x00f0ff,
+  ORANGE: 0xffba00,
+  WHITE: 0xfffff
 } as const;
 
 export const PostParams = {

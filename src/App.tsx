@@ -110,7 +110,7 @@ const App: Component = () => {
       circleLines.forEach((mesh, i) => {
         const offset = 0.02 * Math.floor(i / 4);
         const alpha = mapRange(progress, 0.85 + offset, 0.89 + offset, 0, 1, true);
-        (mesh.material as THREE.ShaderMaterial).uniforms.uAlpha.value = alpha;
+        (mesh.material as THREE.MeshBasicMaterial).opacity = alpha;
       });
 
       floorMaterial.update();

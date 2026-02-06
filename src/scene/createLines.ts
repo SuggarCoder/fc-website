@@ -8,7 +8,7 @@ import { adjustBrightness } from '../utils/helpers';
 export interface LinesResult {
   container: THREE.Group;
   materials: THREE.ShaderMaterial[];
-  circleLines: THREE.Mesh[];  // crossroad_orange_circle_ lines for alpha animation
+  circleLines: THREE.Mesh[];  // crossroad_white_circle_ lines for alpha animation
 }
 
 const createLineMaterial = (
@@ -57,6 +57,26 @@ export const loadLines = (url: string, isMobile: boolean): Promise<LinesResult> 
         if (!geo?.attributes?.position) return;
 
         const name = child.name.toLowerCase();
+
+        // Model 对象是普通3D模型，直接用原始几何体白模渲染
+        if (name.includes('model')) {
+          geo.scale(SCALE, SCALE, SCALE);
+          const basicMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 1,
+            side: THREE.DoubleSide,
+            fog: true
+          });
+          const mesh = new THREE.Mesh(geo, basicMaterial);
+          mesh.name = name;
+          container.add(mesh);
+          if (name.includes('crossroad_white_circle_')) {
+            circleLines.push(mesh);
+          }
+          return;
+        }
+
         const posArray = geo.attributes.position.array as Float32Array;
         const points: THREE.Vector3[] = [];
         for (let i = 0; i < posArray.length; i += 3) {
@@ -64,11 +84,12 @@ export const loadLines = (url: string, isMobile: boolean): Promise<LinesResult> 
         }
         if (points.length < 2) return;
 
-        const isRoadOrGraphic = name.includes('road') || name.includes('graphic') ||
-                                name.includes('integration') || name.includes('payments');
-        const isBlue = name.includes('blue');
+        const isText = name.includes('text');
         const isWhite = name.includes('white');
-        const baseColor = isWhite ? COLORS.WHITE : (isBlue ? COLORS.BLUE : COLORS.ORANGE);
+        const isRoadOrGraphic = !isWhite && (name.includes('road') || name.includes('graphic') ||
+                                name.includes('integration') || name.includes('payments'));
+        const isBlue = name.includes('blue');
+        const baseColor = (isText || isWhite) ? COLORS.WHITE : (isBlue ? COLORS.BLUE : COLORS.ORANGE);
 
         const curve = isRoadOrGraphic ? new LinearCurve(points) : new StaticCurve(points);
         const curveLength = curve.getLength();
@@ -95,14 +116,30 @@ export const loadLines = (url: string, isMobile: boolean): Promise<LinesResult> 
 
         const radialSegments = isMobile ? LineConfig.mobileRadialSegments : LineConfig.desktopRadialSegments;
         const tubeGeo = new THREE.TubeGeometry(curve, tubularSegments, radius, radialSegments, false);
-        const material = createLineMaterial(segmentCount, isRoadOrGraphic, hideCorners, color);
-        materials.push(material);
-        const mesh = new THREE.Mesh(tubeGeo, material);
+
+        let mesh: THREE.Mesh;
+        if (isRoadOrGraphic) {
+          // 发光线段：使用 ShaderMaterial
+          const material = createLineMaterial(segmentCount, true, hideCorners, color);
+          materials.push(material);
+          mesh = new THREE.Mesh(tubeGeo, material);
+        } else {
+          // 静态线段：使用白模（MeshBasicMaterial）
+          const basicMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 1,
+            side: THREE.DoubleSide,
+            fog: true
+          });
+          mesh = new THREE.Mesh(tubeGeo, basicMaterial);
+        }
+
         mesh.name = name;
         container.add(mesh);
 
         // Collect circleLines for alpha animation (source.js: crossroad_orange_circle_)
-        if (name.includes('crossroad_orange_circle_')) {
+        if (name.includes('crossroad_white_circle_')) {
           circleLines.push(mesh);
         }
       });
