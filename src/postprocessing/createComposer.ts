@@ -4,7 +4,8 @@ import {
   EffectPass,
   RenderPass,
   BloomEffect,
-  FXAAEffect,
+  SMAAEffect,
+  SMAAPreset,
   ToneMappingEffect,
   ToneMappingMode,
   Effect,
@@ -31,6 +32,11 @@ class DotEffect extends Effect {
       uniform float uBottomGradientScale;
       uniform float uBottomGradientStrength;
       uniform vec3 uBottomGradientColor;
+      // 方案3: 地平线雾效参数
+      uniform float uHorizonFogStrength;
+      uniform float uHorizonFogPosition;
+      uniform float uHorizonFogSpread;
+      uniform vec3 uHorizonFogColor;
 
       float random(vec2 st) {
         return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
@@ -42,6 +48,11 @@ class DotEffect extends Effect {
 
       void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
         vec4 color = inputColor;
+
+        // 方案3: 地平线雾效 - 在地平线位置添加渐变来掩盖分层
+        float horizonDist = abs(uv.y - uHorizonFogPosition);
+        float horizonFog = 1.0 - smoothstep(0.0, uHorizonFogSpread, horizonDist);
+        color.rgb = mix(color.rgb, uHorizonFogColor, horizonFog * uHorizonFogStrength);
 
         // Gradients
         float gradient1Alpha = 1.0 - distance(uGradient1Position, uv) * uGradient1Scale;
@@ -90,9 +101,24 @@ class DotEffect extends Effect {
         ['uGradient2Scale', new THREE.Uniform(0.17)],
         ['uBottomGradientScale', new THREE.Uniform(0.88)],
         ['uBottomGradientStrength', new THREE.Uniform(0)],
-        ['uBottomGradientColor', new THREE.Uniform(new THREE.Vector3(1, 1, 1))]
+        ['uBottomGradientColor', new THREE.Uniform(new THREE.Vector3(1, 1, 1))],
+        // 方案3: 地平线雾效 uniforms
+        ['uHorizonFogStrength', new THREE.Uniform(0.3)],      // 雾效强度
+        ['uHorizonFogPosition', new THREE.Uniform(0.5)],      // 地平线位置 (0-1, 0.5=屏幕中间)
+        ['uHorizonFogSpread', new THREE.Uniform(0.15)],       // 雾效扩散范围
+        ['uHorizonFogColor', new THREE.Uniform(new THREE.Vector3(0.114, 0.333, 0.624))] // 雾效颜色 (蓝色)
       ])
     });
+  }
+
+  // 方案3: 提供方法来动态调整地平线雾效
+  setHorizonFog(strength: number, position: number, spread: number, color?: THREE.Vector3) {
+    this.uniforms.get('uHorizonFogStrength')!.value = strength;
+    this.uniforms.get('uHorizonFogPosition')!.value = position;
+    this.uniforms.get('uHorizonFogSpread')!.value = spread;
+    if (color) {
+      this.uniforms.get('uHorizonFogColor')!.value = color;
+    }
   }
 }
 
@@ -108,7 +134,7 @@ export interface ComposerResult {
   toneMappingEffect: ToneMappingEffect;
   bloomEffect: BloomEffect;
   dotEffect: DotEffect;
-  fxaaEffect: FXAAEffect;
+  smaaEffect: SMAAEffect;
   resize: (width: number, height: number, pixelRatio: number) => void;
 }
 
@@ -118,7 +144,9 @@ export const createComposer = (
   camera: THREE.Camera,
   config: PostConfig
 ): ComposerResult => {
-  const composer = new EffectComposer(renderer);
+  const composer = new EffectComposer(renderer, {
+    frameBufferType: THREE.HalfFloatType
+  });
 
   // Render pass - renders the scene with background
   const renderPass = new RenderPass(scene, camera);
@@ -127,9 +155,9 @@ export const createComposer = (
   // ToneMapping effect (replaces renderer.toneMapping)
   // source.js uses ACESFilmicToneMapping with exposure 0.7
   const toneMappingEffect = new ToneMappingEffect({
-    mode: ToneMappingMode.ACES_FILMIC
+    mode: ToneMappingMode.ACES_FILMIC,
+    
   });
-  toneMappingEffect.exposure = config.exposure;
 
   // Bloom effect
   const bloomEffect = new BloomEffect({
@@ -142,18 +170,18 @@ export const createComposer = (
   // Custom dot effect (CA, vignette, noise, gradients)
   const dotEffect = new DotEffect();
 
-  // FXAA effect
-  const fxaaEffect = new FXAAEffect();
+  // SMAA effect (better quality than FXAA)
+  const smaaEffect = new SMAAEffect({ preset: SMAAPreset.HIGH });
 
   // Pass order matters: ToneMapping first, then Bloom, then effects
-  composer.addPass(new EffectPass(camera, toneMappingEffect, bloomEffect, dotEffect, fxaaEffect));
+  composer.addPass(new EffectPass(camera, toneMappingEffect, bloomEffect, dotEffect, smaaEffect));
 
   return {
     composer,
     toneMappingEffect,
     bloomEffect,
     dotEffect,
-    fxaaEffect,
+    smaaEffect,
     resize: (width: number, height: number, pixelRatio: number) => {
       composer.setSize(width, height);
     }

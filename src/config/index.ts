@@ -4,7 +4,7 @@
 export const BG_COLOR = 0x1d559f;
 
 // source.js uses 1/7.7 for all model scaling
-export const SCALE = 1 / 7;
+export const SCALE = 1 / 7.7;
 
 export const COLORS = {
   BLUE: 0x1367BE,
@@ -13,7 +13,6 @@ export const COLORS = {
 } as const;
 
 export const PostParams = {
-  exposure: 0.7,
   bloomStrength: 0.5,
   bloomThreshold: 0,
   bloomRadius: 0
@@ -43,7 +42,8 @@ export const FloorConfig = {
   mixStrength: 1.3,
   mixContrast: 1,
   mirror: 0.96,
-  depthScale: 1.5,
+  depthScale: 0,
+  // 方案2: 恢复原值，主要依靠方案4解决
   minDepthThreshold: 0,
   maxDepthThreshold: 2,
   depthToBlurRatioBias: 0,

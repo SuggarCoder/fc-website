@@ -12,6 +12,7 @@ export const createFloor = (
   camera: THREE.Camera,
   scene: THREE.Scene,
   isMobile: boolean,
+  bgColor: number,
   fakeFloor?: THREE.Object3D
 ): FloorResult => {
   const textureLoader = new THREE.TextureLoader();
@@ -24,7 +25,7 @@ export const createFloor = (
   normalMap.repeat.set(4, 4);
   normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
 
-  const geometry = new THREE.PlaneGeometry(1.5, 1.5);
+  const geometry = new THREE.PlaneGeometry(3, 3);
   const mesh = new THREE.Mesh(geometry);
   mesh.position.y = -0.0005;
   mesh.rotation.x = -Math.PI / 2;
@@ -50,6 +51,7 @@ export const createFloor = (
     roughness: FloorConfig.roughness,
     metalness: FloorConfig.metalness,
     normalScale: new THREE.Vector2(...FloorConfig.normalScale),
+    bgColor: bgColor,
     onBeforeRender: () => {
       if (fakeFloor) {
         fakeFloorWasVisible = fakeFloor.visible;

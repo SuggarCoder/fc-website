@@ -25,6 +25,10 @@ export interface MeshReflectorMaterialParams {
   distortionMap?: THREE.Texture;
   onBeforeRender?: () => void;
   onAfterRender?: () => void;
+  // 边缘淡出参数
+  edgeFadeStart?: number;  // 开始淡出的距离 (0-0.5)
+  edgeFadeEnd?: number;    // 完全透明的距离 (0-0.5)
+  bgColor?: number;        // 背景色
 }
 
 export class MeshReflectorMaterial extends THREE.MeshStandardMaterial {
@@ -59,9 +63,17 @@ export class MeshReflectorMaterial extends THREE.MeshStandardMaterial {
 
   private reflectorProps: { [key: string]: any };
 
+  // 方案4: 掠射角因子
+  private grazingFactor: number = 0;
+
   // source.js: onBeforeRender/onAfterRender callbacks
   private onBeforeRenderCallback?: () => void;
   private onAfterRenderCallback?: () => void;
+
+  // 边缘淡出参数
+  private edgeFadeStart: number;
+  private edgeFadeEnd: number;
+  private bgColorVec3: THREE.Vector3;
 
   constructor(
     gl: THREE.WebGLRenderer,
@@ -95,7 +107,11 @@ export class MeshReflectorMaterial extends THREE.MeshStandardMaterial {
       normalScale = new THREE.Vector2(1, 1),
       distortionMap,
       onBeforeRender,
-      onAfterRender
+      onAfterRender,
+      // 边缘淡出参数
+      edgeFadeStart = 0.35,
+      edgeFadeEnd = 0.5,
+      bgColor = 0x000000
     } = params;
 
     this.gl = gl;
@@ -125,6 +141,12 @@ export class MeshReflectorMaterial extends THREE.MeshStandardMaterial {
     this.reflectorOffset = reflectorOffset;
     this.planeNormal = planeNormal;
 
+    // 边缘淡出
+    this.edgeFadeStart = edgeFadeStart;
+    this.edgeFadeEnd = edgeFadeEnd;
+    const c = new THREE.Color(bgColor);
+    this.bgColorVec3 = new THREE.Vector3(c.r, c.g, c.b);
+
     // 设置 FBO
     this.setupBuffers(resolution, blur, blur2, bufferSamples);
 
@@ -136,6 +158,8 @@ export class MeshReflectorMaterial extends THREE.MeshStandardMaterial {
     this.normalScale = normalScale;
 
     // 反射属性 (source.js: reflectorProps)
+    // 方案4: 使用 getter 来获取动态的 grazingFactor
+    const self = this;
     this.reflectorProps = {
       mirror,
       textureMatrix: this.textureMatrix,
@@ -153,6 +177,12 @@ export class MeshReflectorMaterial extends THREE.MeshStandardMaterial {
       distortion,
       distortionMap,
       mixContrast,
+      // 方案4: 掠射角因子 - 用于在掠射角时降低反射强度
+      get grazingFactor() { return self.grazingFactor; },
+      // 边缘淡出
+      edgeFadeStart: this.edgeFadeStart,
+      edgeFadeEnd: this.edgeFadeEnd,
+      bgColor: this.bgColorVec3,
       // source.js: defines
       'defines-USE_BLUR': this.hasBlur ? '' : undefined,
       'defines-USE_DEPTH': depthScale > 0 ? '' : undefined,
@@ -204,6 +234,11 @@ export class MeshReflectorMaterial extends THREE.MeshStandardMaterial {
 
     // 如果相机在反射面背面，不渲染
     if (this.view.dot(this.normal) > 0) return;
+
+    // 方案4: 计算掠射角因子（保留用于未来优化）
+    const viewNormalized = this.view.clone().normalize();
+    const dotProduct = Math.abs(viewNormalized.dot(this.normal));
+    this.grazingFactor = 1.0 - Math.pow(dotProduct, 0.5);
 
     this.view.reflect(this.normal).negate();
     this.view.add(this.reflectorWorldPosition);
@@ -381,6 +416,12 @@ export class MeshReflectorMaterial extends THREE.MeshStandardMaterial {
       uniform float mixContrast;
       uniform float depthScale;
       uniform float depthToBlurRatioBias;
+      // 方案4: 掠射角因子
+      uniform float grazingFactor;
+      // 边缘淡出
+      uniform float edgeFadeStart;
+      uniform float edgeFadeEnd;
+      uniform vec3 bgColor;
       varying vec4 my_vUv;
 
       float rand222(vec2 n) {
@@ -473,6 +514,17 @@ export class MeshReflectorMaterial extends THREE.MeshStandardMaterial {
       newMerge.b = (merge.b - 0.5) * mixContrast + 0.5;
 
       diffuseColor.rgb = diffuseColor.rgb * ((1.0 - min(1.0, mirror)) + newMerge.rgb * mixStrength);
+
+      // 边缘淡出：基于 UV 坐标计算距离中心的距离
+      float edgeDist = max(abs(vUv.x - 0.5), abs(vUv.y - 0.5));
+      float edgeFade = 1.0 - smoothstep(edgeFadeStart, edgeFadeEnd, edgeDist);
+      diffuseColor.rgb = mix(bgColor, diffuseColor.rgb, edgeFade);
+
+      // 每像素 Fresnel 掠射角混合：只在极端掠射角时轻微混入背景色
+      vec3 viewDir = normalize(vViewPosition);
+      float fresnel = 1.0 - abs(dot(viewDir, vec3(0.0, 1.0, 0.0)));
+      float fresnelBlend = smoothstep(0.95, 0.995, fresnel) * 0.5;  // 更高阈值，最多混入50%
+      diffuseColor.rgb = mix(diffuseColor.rgb, bgColor, fresnelBlend);
       `
     );
 

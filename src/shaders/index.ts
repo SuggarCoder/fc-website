@@ -156,7 +156,8 @@ export const gradientFragmentShader = `
   }
   void main() {
     vec2 uv = vUv;
-    float alpha = 1.0 - distance(uv, vec2(0.5, 0.5)) * 2.0;
+    float dist = distance(uv, vec2(0.5, 0.5));
+    float alpha = smoothstep(0.5, 0.15, dist);  // 边缘平滑淡出到透明
     float speed = 0.1;
     float time = uTime * speed;
     uv.x += time * -0.3;
@@ -172,7 +173,7 @@ export const gradientFragmentShader = `
     float alphaBlue = alpha * cBlue1 * cBlue2;
     float alphaOrange = alpha * cOrange1 * cOrange2 * cOrange3;
     gl_FragColor = mix(vec4(COLOR_1, alphaBlue), vec4(COLOR_2, alphaOrange), cMix1 * cMix1 * cMix2 * cMix2);
-    gl_FragColor.a *= 0.75;
+    gl_FragColor.a *= 0.35;  // 降低雾气密度
   }
 `;
 

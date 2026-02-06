@@ -55,7 +55,7 @@ const App: Component = () => {
 
     // Create scene objects
     const { mesh: gradient, material: gradientMaterial } = createGradientPlane();
-    const { mesh: floor, material: floorMaterial } = createFloor(renderer, camera, scene, isMobile, gradient);
+    const { mesh: floor, material: floorMaterial } = createFloor(renderer, camera, scene, isMobile, BG_COLOR, gradient);
     scene.add(floor, gradient);
 
     // Load lines
@@ -92,6 +92,9 @@ const App: Component = () => {
         const pos = cameraPath.getPositionAt(scrollSystem.progress);
         const target = cameraPath.getTargetAt(scrollSystem.progress);
         controls.setLookAt(pos.x, pos.y, pos.z, target.x, target.y, target.z, true);
+
+        // 关闭后处理雾效，测试反射材质中的地平线淡出效果
+        post.dotEffect.setHorizonFog(0, 0.5, 0.1);
       }
 
       mouseParallax.update(controls);

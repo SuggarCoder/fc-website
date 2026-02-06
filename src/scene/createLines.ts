@@ -28,6 +28,7 @@ const createLineMaterial = (
     depthTest: true,
     depthWrite: true,
     fog: true,
+    side: THREE.DoubleSide,  // 防止某些角度背面被剔除导致断续
     uniforms: THREE.UniformsUtils.merge([
       THREE.UniformsLib.fog,
       {
