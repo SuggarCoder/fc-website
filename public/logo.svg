@@ -1,0 +1,60 @@
+<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+
+  <defs>
+    <rect id="node" x="-18" y="-9" width="36" height="18" fill="#ffffff" />
+  </defs>
+
+  <g transform="translate(300, 300)">
+    
+    <g stroke="#ffffff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      
+      <path d="M 0,-200 L 200,0 L 0,200 L -200,0 Z" />
+      
+      <path d="M 141.42,-141.42 L 141.42,141.42 L -141.42,141.42 L -141.42,-141.42 Z" />
+
+      <path d="M 0,-200 L 42.1,-101.6" />
+      <path d="M 0,-200 L -42.1,-101.6" />
+
+      <path d="M 141.42,-141.42 L 42.1,-101.6" />
+      <path d="M 141.42,-141.42 L 101.6,-42.1" />
+
+      <path d="M 200,0 L 101.6,-42.1" />
+      <path d="M 200,0 L 101.6,42.1" />
+
+      <path d="M 141.42,141.42 L 101.6,42.1" />
+      <path d="M 141.42,141.42 L 42.1,101.6" />
+
+      <path d="M 0,200 L 42.1,101.6" />
+      <path d="M 0,200 L -42.1,101.6" />
+
+      <path d="M -141.42,141.42 L -42.1,101.6" />
+      <path d="M -141.42,141.42 L -101.6,42.1" />
+
+      <path d="M -200,0 L -101.6,42.1" />
+      <path d="M -200,0 L -101.6,-42.1" />
+
+      <path d="M -141.42,-141.42 L -101.6,-42.1" />
+      <path d="M -141.42,-141.42 L -42.1,-101.6" />
+
+    </g>
+
+    <g>
+      <use href="#node" transform="translate(0, -200) rotate(0)" />          <use href="#node" transform="translate(141.42, -141.42) rotate(45)" /> <use href="#node" transform="translate(200, 0) rotate(90)" />          <use href="#node" transform="translate(141.42, 141.42) rotate(135)" /> <use href="#node" transform="translate(0, 200) rotate(180)" />         <use href="#node" transform="translate(-141.42, 141.42) rotate(225)" /><use href="#node" transform="translate(-200, 0) rotate(270)" />        <use href="#node" transform="translate(-141.42, -141.42) rotate(315)" /><use href="#node" transform="translate(42.1, -101.6) rotate(22.5)" />
+
+      <use href="#node" transform="translate(101.6, -42.1) rotate(67.5)" />
+
+      <use href="#node" transform="translate(101.6, 42.1) rotate(112.5)" />
+
+      <use href="#node" transform="translate(42.1, 101.6) rotate(157.5)" />
+
+      <use href="#node" transform="translate(-42.1, 101.6) rotate(202.5)" />
+
+      <use href="#node" transform="translate(-101.6, 42.1) rotate(247.5)" />
+
+      <use href="#node" transform="translate(-101.6, -42.1) rotate(292.5)" />
+
+      <use href="#node" transform="translate(-42.1, -101.6) rotate(337.5)" />
+
+    </g>
+  </g>
+</svg>

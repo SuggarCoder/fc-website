@@ -1,13 +1,15 @@
+import { colors, toHex } from '../colors';
+
 // Configuration constants
-export const BG_COLOR = 0x000835;
+export const BG_COLOR = toHex(colors.bg);
 
 // source.js uses 1/7.7 for all model scaling
 export const SCALE = 1 / 7.7;
 
 export const COLORS = {
-  BLUE: 0x00f0ff,
-  ORANGE: 0xffba00,
-  WHITE: 0xfffff
+  BLUE: toHex(colors.blue),
+  ORANGE: toHex(colors.orange),
+  WHITE: toHex(colors.white)
 } as const;
 
 export const PostParams = {
