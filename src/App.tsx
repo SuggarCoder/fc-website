@@ -122,6 +122,8 @@ const App: Component = () => {
   let sec4Ref: HTMLDivElement | undefined;
   let sec5Ref: HTMLDivElement | undefined;
   let sec6Ref: HTMLDivElement | undefined;
+  let whiteOverlayRef: HTMLDivElement | undefined;
+  let blackOverlayRef: HTMLDivElement | undefined;
   let getStartedTl: gsap.core.Timeline | undefined;
   let drawer2Tl: gsap.core.Timeline | undefined;
 
@@ -639,9 +641,14 @@ const App: Component = () => {
     const animate = (time: number, deltaTimeMs: number) => {
       const dt = deltaTimeMs / 1000;
 
+      // ── Progress remapping: 前4000px保持原速，后1000px给新div ──
+      const rawProgress = scrollSystem.progress;
+      const BASE_END = 4000 / 5000; // 0.8
+      const baseProgress = Math.min(1, rawProgress / BASE_END);
+
       if (pathReady()) {
-        const pos = cameraPath.getPositionAt(scrollSystem.progress);
-        const target = cameraPath.getTargetAt(scrollSystem.progress);
+        const pos = cameraPath.getPositionAt(baseProgress);
+        const target = cameraPath.getTargetAt(baseProgress);
         controls.setLookAt(pos.x, pos.y, pos.z, target.x, target.y, target.z, true);
 
         // 关闭后处理雾效，测试反射材质中的地平线淡出效果
@@ -657,15 +664,23 @@ const App: Component = () => {
       gradientMaterial.uniforms.uTime.value = animTime;
 
       // Update circleLines alpha based on scroll progress
-      const progress = scrollSystem.progress;
       circleLines.forEach((mesh, i) => {
         const offset = 0.02 * Math.floor(i / 4);
-        const alpha = mapRange(progress, 0.85 + offset, 0.89 + offset, 0, 1, true);
+        const alpha = mapRange(baseProgress, 0.85 + offset, 0.89 + offset, 0, 1, true);
         (mesh.material as THREE.MeshBasicMaterial).opacity = alpha;
       });
 
       // ── All scroll-driven transitions (scrubbed + triggered via onUpdate) ──
-      scrollTl.progress(progress);
+      scrollTl.progress(baseProgress);
+
+      // ── 白色div：从底部滑入（rawProgress 0.8 → 0.9，即500px）──
+      const WHITE_END = 0.9;
+      const whiteP = mapRange(rawProgress, BASE_END, WHITE_END, 0, 1, true);
+      whiteOverlayRef!.style.transform = `translateY(${(1 - whiteP) * 100}%)`;
+
+      // ── 黑色div：从底部滑入（rawProgress 0.9 → 1.0，即500px）──
+      const blackP = mapRange(rawProgress, WHITE_END, 1, 0, 1, true);
+      blackOverlayRef!.style.transform = `translateY(${(1 - blackP) * 100}%)`;
 
       floorMaterial.update();
 
@@ -700,6 +715,8 @@ const App: Component = () => {
     <>
       <div ref={containerRef} class="fixed inset-0 w-full h-full" />
       <div ref={pinRef} class="relative w-full h-screen">
+          <div ref={whiteOverlayRef} class="absolute inset-0 bg-white z-40" style={{ transform: 'translateY(100%)' }} />
+          <div ref={blackOverlayRef} class="absolute inset-0 bg-black z-41" style={{ transform: 'translateY(100%)' }} />
           <div ref={sec2Ref} class="absolute inset-0 flex justify-end px-4 md:px-8" style={{ opacity: 0 }}>
             <div class="w-1/3 flex flex-col gap-6 h-screen justify-center">
               <p class="text-xs font-light text-white leading-tight">
@@ -817,6 +834,7 @@ const App: Component = () => {
         <div class="absolute inset-0 flex flex-col justify-between overflow-hidden">
           <nav class="relative flex flex-col lg:flex-row items-start justify-between px-4 py-3 md:px-4 md:py-4">
             <div id="main" ref={mainRef} class="flex flex-row gap-4 items-start relative z-50">
+
               <div class="flex flex-row">
                 {/* Logo */}
                 <div class="flex items-center gap-2 rounded-l-md px-4 bg-[#1a1e3a]/30">
