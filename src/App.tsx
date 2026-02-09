@@ -312,6 +312,10 @@ const App: Component = () => {
     let prevSec4Idx = -1;
     let sec4Tl: gsap.core.Timeline | null = null;
 
+    // Section 3 + 4 combined exit at progress 0.64 (triggered)
+    let sec34Exited = false;
+    let sec34ExitTl: gsap.core.Timeline | null = null;
+
     // Initialize scene
     const scene = createScene(BG_COLOR);
     const renderer = createRenderer(containerRef, { bgColor: BG_COLOR });
@@ -436,7 +440,7 @@ const App: Component = () => {
         sec4Idx = Math.min(2, Math.floor((progress - sec4Start) / sec4Step));
       }
 
-      if (sec4Idx !== prevSec4Idx) {
+      if (sec4Idx !== prevSec4Idx && !sec34Exited) {
         if (sec4Tl) sec4Tl.kill();
         // Reset all chars to prevent overlap from killed animations
         sec4TitleChars.forEach(chars => gsap.set(chars, { opacity: 0 }));
@@ -491,6 +495,73 @@ const App: Component = () => {
         prevSec4Idx = sec4Idx;
       }
 
+      // 0.64: sec3 + sec4 combined exit (triggered)
+      const shouldExit = progress >= 0.64;
+      if (shouldExit !== sec34Exited) {
+        sec34Exited = shouldExit;
+        if (sec34ExitTl) sec34ExitTl.kill();
+
+        if (shouldExit) {
+          // Kill any running sec4 content animation
+          if (sec4Tl) { sec4Tl.kill(); sec4Tl = null; }
+
+          sec34ExitTl = gsap.timeline();
+
+          // Sec3: random letter fade out
+          sec34ExitTl.to(sec3Chars, {
+            opacity: 0, duration: 0.03,
+            stagger: { amount: 0.3, from: 'random' },
+            ease: 'power2.in',
+            onComplete: () => setSec3Opacity(0),
+          }, 0);
+
+          // Sec4: active content random letter fade out + container slide away
+          const activeSec4Chars = prevSec4Idx >= 0
+            ? [...sec4TitleChars[prevSec4Idx], ...sec4DescChars[prevSec4Idx]]
+            : [];
+          if (activeSec4Chars.length) {
+            sec34ExitTl.to(activeSec4Chars, {
+              opacity: 0, duration: 0.03,
+              stagger: { amount: 0.3, from: 'random' },
+              ease: 'power2.in',
+            }, 0);
+          }
+          sec34ExitTl.to(sec4Ref!, {
+            opacity: 0, yPercent: 50, duration: 0.5, ease: 'power2.in',
+          }, 0.2);
+        } else {
+          // Scrolling back: restore sec3 + sec4
+          // Sync prevSec4Idx to current progress so sec4 switching won't fire spuriously
+          prevSec4Idx = sec4Idx;
+
+          sec34ExitTl = gsap.timeline();
+
+          // Restore sec3
+          setSec3Opacity(1);
+          sec34ExitTl.to(sec3Chars, {
+            opacity: 1, duration: 0.05,
+            stagger: { amount: 0.5, from: 'random' },
+            ease: 'power2.out',
+          }, 0);
+
+          // Restore sec4 container + content matching current progress
+          sec34ExitTl.to(sec4Ref!, {
+            opacity: 1, yPercent: 0, duration: 0.5, ease: 'power2.out',
+          }, 0);
+          if (sec4Idx >= 0) {
+            // Reset all then fade in the correct content
+            sec4TitleChars.forEach(chars => gsap.set(chars, { opacity: 0 }));
+            sec4DescChars.forEach(chars => gsap.set(chars, { opacity: 0 }));
+            const chars = [...sec4TitleChars[sec4Idx], ...sec4DescChars[sec4Idx]];
+            sec34ExitTl.to(chars, {
+              opacity: 1, duration: 0.05,
+              stagger: { amount: 0.5, from: 'random' },
+              ease: 'power2.out',
+            }, 0.15);
+          }
+        }
+      }
+
       floorMaterial.update();
 
       post.composer.render(dt);
@@ -501,6 +572,7 @@ const App: Component = () => {
     onCleanup(() => {
       getStartedTl?.kill();
       sec4Tl?.kill();
+      sec34ExitTl?.kill();
       gsap.ticker.remove(animate);
       window.removeEventListener('resize', handleResize);
       mouseParallax.dispose();
