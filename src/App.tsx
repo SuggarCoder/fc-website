@@ -202,6 +202,11 @@ const App: Component = () => {
     setActiveIndex(-1);
   };
 
+  const goToOverlay = (progress: number) => {
+    if (menuOpen()) toggleMenu();
+    scrollSystem?.scrollToProgress(progress);
+  };
+
   const toggleMenu = () => {
     const opening = !menuOpen();
     setMenuOpen(opening);
@@ -878,9 +883,9 @@ const App: Component = () => {
                 </div>
                 {/* 展开菜单 */}
                 <div class="px-4">
-                  <a class="block py-2 text-white/70 lg:text-xl hover:text-white transition-colors cursor-pointer">Initiate Your Settlement</a>
+                  <a class="block py-2 text-white/70 lg:text-xl hover:text-white transition-colors cursor-pointer" onClick={() => goToOverlay(0.9)}>Initiate Your Settlement</a>
                   <div class="mx-1 h-px bg-white/30" />
-                  <a class="block py-2 text-white/70 lg:text-xl hover:text-white transition-colors cursor-pointer">Contact</a>
+                  <a class="block py-2 text-white/70 lg:text-xl hover:text-white transition-colors cursor-pointer" onClick={() => goToOverlay(1)}>Contact</a>
                 </div>
               </div>
             </div>

@@ -11,6 +11,7 @@ export interface ScrollSystem {
   resetToStart: () => void;
   stop: () => void;
   start: () => void;
+  scrollToProgress: (progress: number) => void;
 }
 
 export const createScrollSystem = (): ScrollSystem => {
@@ -65,5 +66,11 @@ export const createScrollSystem = (): ScrollSystem => {
 
     stop: () => { lenis?.stop(); },
     start: () => { lenis?.start(); },
+
+    scrollToProgress: (p: number) => {
+      if (!trigger || !lenis) return;
+      const px = trigger.start + (trigger.end - trigger.start) * p;
+      lenis.scrollTo(px, { duration: 2 });
+    },
   };
 };
