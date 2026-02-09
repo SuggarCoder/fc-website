@@ -55,25 +55,3 @@ export const flickerOut = (t: number): number => stepAt(FLICKER_IN, 1 - t);
 export const flickerCharIn = (t: number): number => stepAt(FLICKER_CHAR, t);
 /** Character-level flicker-out: t 0→1, opacity 1 ⇝ 0 */
 export const flickerCharOut = (t: number): number => stepAt(FLICKER_CHAR, 1 - t);
-
-/** Split all text nodes inside `el` into per-character <span>s */
-export const splitTextToChars = (el: HTMLElement): HTMLSpanElement[] => {
-  const chars: HTMLSpanElement[] = [];
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-  const textNodes: Text[] = [];
-  while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
-  textNodes.forEach(node => {
-    const trimmed = (node.textContent || '').trim();
-    if (!trimmed) { node.parentElement!.removeChild(node); return; }
-    const frag = document.createDocumentFragment();
-    [...trimmed].forEach(ch => {
-      const span = document.createElement('span');
-      span.style.display = 'inline-block';
-      span.textContent = ch === ' ' ? '\u00A0' : ch;
-      frag.appendChild(span);
-      chars.push(span);
-    });
-    node.parentElement!.replaceChild(frag, node);
-  });
-  return chars;
-};

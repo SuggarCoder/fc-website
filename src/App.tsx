@@ -1,4 +1,4 @@
-import { type Component, onMount, onCleanup, createSignal } from 'solid-js';
+import { type Component, onMount, onCleanup, createSignal, For, Show } from 'solid-js';
 import gsap from 'gsap';
 import { BG_COLOR, PostParams, CameraConfig } from './config';
 import { createScene } from './scene/createScene';
@@ -11,7 +11,77 @@ import { createComposer } from './postprocessing/createComposer';
 import { createMouseParallax } from './systems/createMouseParallax';
 import { createScrollSystem } from './systems/createScrollSystem';
 import { createCameraPath } from './systems/createCameraPath';
-import { mapRange, splitTextToChars } from './utils/helpers';
+import { mapRange } from './utils/helpers';
+import SplitText from './components/SplitText';
+
+const menuData = [
+  {
+    label: 'Proposition',
+    content: () => (
+      <ul class="flex flex-col gap-3 px-8 list-none">
+        <li class="text-white/60 text-base leading-relaxed text-xl">Instant Cross-Border Transfers</li>
+        <p class="text-white/40">Settle transactions in minutes not days.</p>
+        <li class="text-white/60 text-base leading-relaxed text-xl">Lower Transaction Costs</li>
+        <p class="text-white/40">Reduce fees compared to traditional correspondent banking networks.</p>
+        <li class="text-white/60 text-base leading-relaxed text-xl">Global Reach</li>
+        <p class="text-white/40">Move capital across countries and currencies without geographical limitations.</p>
+        <li class="text-white/60 text-base leading-relaxed text-xl">Institution-Grade Security</li>
+        <p class="text-white/40">Advanced custody, encryption, and risk controls.</p>
+      </ul>
+    ),
+  },
+  {
+    label: 'Products & Services',
+    content: () => (
+      <ul class="flex flex-col gap-3 px-8 list-none">
+        <li class="text-white/60 text-base leading-relaxed text-xl">Cross-Border Payments</li>
+        <p class="text-white/40">Send and receive funds globally using crypto rails while settling in local or digital currencies.</p>
+        <li class="text-white/60 text-base leading-relaxed text-xl">Treasury & Liquidity Management</li>
+        <p class="text-white/40">Optimize capital allocation, manage digital asset liquidity, and streamline treasury operations across regions.</p>
+        <li class="text-white/60 text-base leading-relaxed text-xl">On/Off-Ramp Solutions</li>
+        <p class="text-white/40">Seamlessly convert between fiat and digital assets with transparent pricing and fast settlement.</p>
+      </ul>
+    ),
+  },
+  {
+    label: 'How It Works',
+    content: () => (
+      <ul class="flex flex-col gap-3 px-8 list-none">
+        <li class="text-white/60 text-base leading-relaxed text-xl">Initiate Transfer</li>
+        <p class="text-white/40">Submit a payment or settlement request via API or dashboard.</p>
+        <li class="text-white/60 text-base leading-relaxed text-xl">Crypto Rail Settlement</li>
+        <p class="text-white/40">Funds are transferred using secure blockchain infrastructure.</p>
+        <li class="text-white/60 text-base leading-relaxed text-xl">Local Payout</li>
+        <p class="text-white/40">Receive funds in the desired currency or digital asset.</p>
+      </ul>
+    ),
+  },
+  {
+    label: 'Compliance',
+    content: () => (
+      <ul class="flex flex-col gap-3 px-8 list-none">
+        <li class="text-white/60 text-base leading-relaxed text-xl">Multi-layer custody and wallet security</li>
+        <li class="text-white/60 text-base leading-relaxed text-xl">Real-time transaction monitoring</li>
+        <li class="text-white/60 text-base leading-relaxed text-xl">Regulatory-aligned operations across jurisdictions</li>
+      </ul>
+    ),
+  },
+];
+
+const sec4Data = [
+  {
+    title: 'Cross-Border Payments',
+    desc: "Flow Capital's Cross-Border Payments solution enables businesses and institutions to move capital globally with speed, transparency, and reliability. By leveraging blockchain-based settlement rails, we significantly reduce transfer times and costs compared to traditional correspondent banking networks. Payments can be initiated via platform or API and settled in near real time, improving cash flow visibility and operational efficiency. Built-in compliance checks ensure alignment with KYC, AML, and regulatory requirements across jurisdictions. With predictable settlement, transparent pricing, and global coverage, Flow Capital provides a modern, scalable alternative for international payments.",
+  },
+  {
+    title: 'Treasury & Liquidity Management',
+    desc: 'Flow Capital offers integrated Treasury and Liquidity Management solutions for organizations operating across multiple markets and currencies. Our platform provides real-time visibility into balances, enables efficient capital allocation, and supports both fiat and digital assets. Faster settlement cycles reduce idle capital and improve liquidity utilization, while programmable workflows streamline treasury operations. Institutional-grade custody, monitoring, and reporting ensure security and compliance at every stage. Flow Capital transforms global treasury management into a more agile, efficient, and strategic function.',
+  },
+  {
+    title: 'On- & Off-Ramp Solutions',
+    desc: "Flow Capital's On- and Off-Ramp solutions provide seamless conversion between fiat currencies and digital assets through compliant, transparent infrastructure. Clients benefit from predictable pricing, fast settlement, and reliable access to liquidity without operational complexity. Robust KYC, AML, and transaction monitoring frameworks are embedded throughout the conversion process, supporting regulatory alignment across regions. Our APIs enable easy integration into existing platforms, allowing businesses and institutions to confidently bridge traditional finance and the digital asset ecosystem.",
+  },
+];
 
 const App: Component = () => {
   let containerRef: HTMLDivElement | undefined;
@@ -20,6 +90,7 @@ const App: Component = () => {
   let arrowRef: HTMLDivElement | undefined;
   let maskRef: HTMLDivElement | undefined;
   let getStartedRef: HTMLDivElement | undefined;
+  let headerRef: HTMLDivElement | undefined;
   let mainRef: HTMLDivElement | undefined;
   let drawerRef: HTMLDivElement | undefined;
   let backdropRef: HTMLDivElement | undefined;
@@ -30,71 +101,32 @@ const App: Component = () => {
   let heroRef: HTMLDivElement | undefined;
   let descRef: HTMLDivElement | undefined;
   let sec2Ref: HTMLDivElement | undefined;
+  let sec2LineRef: HTMLDivElement | undefined;
   let sec3Ref: HTMLDivElement | undefined;
+  let sec4Ref: HTMLDivElement | undefined;
   let getStartedTl: gsap.core.Timeline | undefined;
   let drawer2Tl: gsap.core.Timeline | undefined;
 
   const [menuOpen, setMenuOpen] = createSignal(false);
   const [activeIndex, setActiveIndex] = createSignal(-1);
   const [arrowY, setArrowY] = createSignal(0);
+  const [descOpacity, setDescOpacity] = createSignal(1);
+  const [sec2Opacity, setSec2Opacity] = createSignal(0);
+  const [sec2LineOpacity, setSec2LineOpacity] = createSignal(0);
+  const [sec3Opacity, setSec3Opacity] = createSignal(0);
+  const [drawer2Open, setDrawer2Open] = createSignal(false);
+  const [pathReady, setPathReady] = createSignal(false);
   const isMobile = false;
 
-  const menuData = [
-    {
-      label: 'Proposition',
-      content: () => (
-        <ul class="flex flex-col gap-3 px-8 list-none">
-          <li class="text-white/60 text-base leading-relaxed text-xl">Instant Cross-Border Transfers</li>
-          <p class="text-white/40">Settle transactions in minutes not days.</p>
-          <li class="text-white/60 text-base leading-relaxed text-xl">Lower Transaction Costs</li>
-          <p class="text-white/40">Reduce fees compared to traditional correspondent banking networks.</p>
-          <li class="text-white/60 text-base leading-relaxed text-xl">Global Reach</li>
-          <p class="text-white/40">Move capital across countries and currencies without geographical limitations.</p>
-          <li class="text-white/60 text-base leading-relaxed text-xl">Institution-Grade Security</li>
-          <p class="text-white/40">Advanced custody, encryption, and risk controls.</p>
-        </ul>
-      ),
-    },
-    {
-      label: 'Products & Services',
-      content: () => (
-        <ul class="flex flex-col gap-3 px-8 list-none">
-          <li class="text-white/60 text-base leading-relaxed text-xl">Cross-Border Payments</li>
-          <p class="text-white/40">Send and receive funds globally using crypto rails while settling in local or digital currencies.</p>
-          <li class="text-white/60 text-base leading-relaxed text-xl">Treasury & Liquidity Management</li>
-          <p class="text-white/40">Optimize capital allocation, manage digital asset liquidity, and streamline treasury operations across regions.</p>
-          <li class="text-white/60 text-base leading-relaxed text-xl">On/Off-Ramp Solutions</li>
-          <p class="text-white/40">Seamlessly convert between fiat and digital assets with transparent pricing and fast settlement.</p>
-        </ul>
-      ),
-    },
-    {
-      label: 'How It Works',
-      content: () => (
-        <ul class="flex flex-col gap-3 px-8 list-none">
-          <li class="text-white/60 text-base leading-relaxed text-xl">Initiate Transfer</li>
-          <p class="text-white/40">Submit a payment or settlement request via API or dashboard.</p>
-          <li class="text-white/60 text-base leading-relaxed text-xl">Crypto Rail Settlement</li>
-          <p class="text-white/40">Funds are transferred using secure blockchain infrastructure.</p>
-          <li class="text-white/60 text-base leading-relaxed text-xl">Local Payout</li>
-          <p class="text-white/40">Receive funds in the desired currency or digital asset.</p>
-        </ul>
-      ),
-    },
-    {
-      label: 'Compliance',
-      content: () => (
-        <ul class="flex flex-col gap-3 px-8 list-none">
-          <li class="text-white/60 text-base leading-relaxed text-xl">Multi-layer custody and wallet security</li>
-          <li class="text-white/60 text-base leading-relaxed text-xl">Real-time transaction monitoring</li>
-          <li class="text-white/60 text-base leading-relaxed text-xl">Regulatory-aligned operations across jurisdictions</li>
-        </ul>
-      ),
-    },
-  ];
+  // Char refs collected from SplitText components
+  const heroChars: HTMLSpanElement[] = [];
+  const descChars: HTMLSpanElement[] = [];
+  const sec2Chars: HTMLSpanElement[] = [];
+  const sec3Chars: HTMLSpanElement[] = [];
+  const sec4TitleChars: HTMLSpanElement[][] = [[], [], []];
+  const sec4DescChars: HTMLSpanElement[][] = [[], [], []];
 
   let menuTl: gsap.core.Timeline | undefined;
-  let drawer2Open = false;
   const menuProxy = { t: 0 };
   const arrowProxy = { y: 0 };
 
@@ -108,7 +140,7 @@ const App: Component = () => {
     const targetRect = target.getBoundingClientRect();
     const newY = targetRect.top - panelRect.top + targetRect.height / 2;
 
-    if (drawer2Open) {
+    if (drawer2Open()) {
       gsap.to(arrowProxy, {
         y: newY, duration: 0.25, ease: 'power2.out',
         onUpdate: () => setArrowY(arrowProxy.y),
@@ -116,7 +148,7 @@ const App: Component = () => {
       return;
     }
 
-    drawer2Open = true;
+    setDrawer2Open(true);
     arrowProxy.y = newY;
     setArrowY(newY);
 
@@ -138,7 +170,7 @@ const App: Component = () => {
   };
 
   const hideDrawer2 = () => {
-    drawer2Open = false;
+    setDrawer2Open(false);
     if (!drawer2Ref || !dividerRef) return;
     if (drawer2Tl) drawer2Tl.kill();
 
@@ -165,16 +197,16 @@ const App: Component = () => {
       const t = menuProxy.t;
       const r = radius * Math.sin(t * Math.PI);
       const angle = t * sweepAngle;
-      // Convergence + orbital arc + rotation — all simultaneous 
+      // Convergence + orbital arc + rotation — all simultaneous
       gsap.set(line1Ref!, {
         x: r * Math.cos(angle),
-        y: -4 * (1 - t) + r * Math.sin(angle), 
-        rotation: t * 45,  
+        y: -4 * (1 - t) + r * Math.sin(angle),
+        rotation: t * 45,
       });
-      gsap.set(line2Ref!, { 
+      gsap.set(line2Ref!, {
         x: -r * Math.cos(angle),
         y: 4 * (1 - t) - r * Math.sin(angle),
-        rotation: t * -45,   
+        rotation: t * -45,
       });
       // Phase 2: spread lines back to initial positions
   };
@@ -197,7 +229,7 @@ const App: Component = () => {
         tl.to(panelRef, { x: '0%', duration: 0.5, ease: 'power2.out' }, 0.1);
       } else {
         // Reset drawer2
-        drawer2Open = false;
+        setDrawer2Open(false);
         if (drawer2Ref) gsap.set(drawer2Ref, { visibility: 'hidden', clipPath: 'inset(0 100% 0 0)' });
         if (dividerRef) gsap.set(dividerRef, { opacity: 0 });
         setActiveIndex(-1);
@@ -210,11 +242,10 @@ const App: Component = () => {
   };
 
   onMount(() => {
-    if (!containerRef || !arrowRef || !maskRef || !getStartedRef) return;
+    if (!containerRef || !arrowRef || !maskRef || !getStartedRef || !headerRef) return;
 
     // Collapse container to header-only height
-    const headerEl = getStartedRef.children[0] as HTMLElement;
-    gsap.set(getStartedRef, { height: headerEl.offsetHeight });
+    gsap.set(getStartedRef, { height: headerRef.offsetHeight });
 
     const maskParent = maskRef.parentElement!;
     let size = 0;
@@ -247,11 +278,6 @@ const App: Component = () => {
         ease: 'power2.inOut',
       }, 0);
 
-    // Split text into per-character spans for random letter fade
-    const heroChars = heroRef ? splitTextToChars(heroRef.querySelector('h1')!) : [];
-    const descP = descRef?.querySelector('p');
-    const descChars = descP ? splitTextToChars(descP) : [];
-
     // Build random-letter fade timelines (scrubbed by scroll)
     // Uses `amount` instead of `each` so stagger ratio is consistent regardless of char count
     const buildFadeOutTl = (chars: HTMLSpanElement[]): gsap.core.Timeline => {
@@ -273,19 +299,18 @@ const App: Component = () => {
     const descFadeTl = buildFadeOutTl(descChars);
 
     // Section 2 — fade in + fade out
-    const sec2Chars: HTMLSpanElement[] = [];
-    sec2Ref?.querySelectorAll('p').forEach(p => sec2Chars.push(...splitTextToChars(p as HTMLElement)));
     const sec2FadeInTl = buildFadeInTl(sec2Chars);
     const sec2FadeOutTl = buildFadeOutTl(sec2Chars);
-    const sec2Line = sec2Ref?.querySelector('[data-sec2-line]') as HTMLElement | null;
-    if (sec2Ref) gsap.set(sec2Ref, { opacity: 0 });
-    if (sec2Line) gsap.set(sec2Line, { opacity: 0 });
 
     // Section 3 — fade in
-    const sec3Chars: HTMLSpanElement[] = [];
-    sec3Ref?.querySelectorAll('p').forEach(p => sec3Chars.push(...splitTextToChars(p as HTMLElement)));
     const sec3FadeInTl = buildFadeInTl(sec3Chars);
-    if (sec3Ref) gsap.set(sec3Ref, { opacity: 0 });
+
+    // Section 4 — fully triggered (not scrubbed)
+    sec4TitleChars.forEach(chars => gsap.set(chars, { opacity: 0 }));
+    sec4DescChars.forEach(chars => gsap.set(chars, { opacity: 0 }));
+    gsap.set(sec4Ref!, { opacity: 0, yPercent: 50 });
+    let prevSec4Idx = -1;
+    let sec4Tl: gsap.core.Timeline | null = null;
 
     // Initialize scene
     const scene = createScene(BG_COLOR);
@@ -308,16 +333,15 @@ const App: Component = () => {
     controls.setLookAt(initPos.x, initPos.y, initPos.z, initTarget.x, initTarget.y, initTarget.z, false);
 
     // Load camera path
-    let pathReady = false;
     cameraPath.load('./camera.glb').then(() => {
-      pathReady = true;
+      setPathReady(true);
       // Reset to curve start position after load
       const startPos = cameraPath.getPositionAt(0);
       const startTarget = cameraPath.getTargetAt(0);
       controls.setLookAt(startPos.x, startPos.y, startPos.z, startTarget.x, startTarget.y, startTarget.z, false);
     }).catch((err) => {
       console.warn('[App] Using fallback preloader path:', err);
-      pathReady = true;
+      setPathReady(true);
     });
 
     // Create scene objects
@@ -355,7 +379,7 @@ const App: Component = () => {
     const animate = (time: number, deltaTimeMs: number) => {
       const dt = deltaTimeMs / 1000;
 
-      if (pathReady) {
+      if (pathReady()) {
         const pos = cameraPath.getPositionAt(scrollSystem.progress);
         const target = cameraPath.getTargetAt(scrollSystem.progress);
         controls.setLookAt(pos.x, pos.y, pos.z, target.x, target.y, target.z, true);
@@ -385,7 +409,7 @@ const App: Component = () => {
       const flickerT = mapRange(progress, 0, 0.08, 0, 1, true);
       heroFadeTl.progress(flickerT);
       descFadeTl.progress(flickerT);
-      if (descRef) descRef.style.opacity = String(1 - flickerT);
+      setDescOpacity(1 - flickerT);
 
       // 0.10→0.18: sec2 letters fade in + container fade in
       const sec2InT = mapRange(progress, 0.10, 0.18, 0, 1, true);
@@ -393,20 +417,79 @@ const App: Component = () => {
       const sec2OutT = mapRange(progress, 0.20, 0.26, 0, 1, true);
       sec2FadeInTl.progress(sec2InT);
       sec2FadeOutTl.progress(sec2OutT);
-      if (sec2Ref) {
-        const sec2Visible = sec2InT > 0 && sec2OutT < 1;
-        sec2Ref.style.opacity = sec2Visible ? '1' : '0';
-      }
-      if (sec2Line) {
-        const lineAlpha = sec2OutT > 0 ? 1 - sec2OutT : sec2InT;
-        sec2Line.style.opacity = String(lineAlpha);
-      }
+      const sec2Visible = sec2InT > 0 && sec2OutT < 1;
+      setSec2Opacity(sec2Visible ? 1 : 0);
+      const lineAlpha = sec2OutT > 0 ? 1 - sec2OutT : sec2InT;
+      setSec2LineOpacity(lineAlpha);
 
       // 0.24→0.28: gap
       // 0.28→0.32: sec3 letters fade in (container visibility toggles)
       const sec3InT = mapRange(progress, 0.28, 0.32, 0, 1, true);
       sec3FadeInTl.progress(sec3InT);
-      if (sec3Ref) sec3Ref.style.opacity = sec3InT > 0 ? '1' : '0';
+      setSec3Opacity(sec3InT > 0 ? 1 : 0);
+
+      // 0.40→: sec4 — fully triggered, step = 0.08
+      const sec4Start = 0.40;
+      const sec4Step = 0.08;
+      let sec4Idx = -1;
+      if (progress >= sec4Start) {
+        sec4Idx = Math.min(2, Math.floor((progress - sec4Start) / sec4Step));
+      }
+
+      if (sec4Idx !== prevSec4Idx) {
+        if (sec4Tl) sec4Tl.kill();
+        // Reset all chars to prevent overlap from killed animations
+        sec4TitleChars.forEach(chars => gsap.set(chars, { opacity: 0 }));
+        sec4DescChars.forEach(chars => gsap.set(chars, { opacity: 0 }));
+
+        sec4Tl = gsap.timeline();
+
+        const isEntering = prevSec4Idx === -1 && sec4Idx >= 0;
+        const isLeaving = prevSec4Idx >= 0 && sec4Idx === -1;
+
+        if (isEntering) {
+          // Container slides up + first content fades in simultaneously
+          sec4Tl.to(sec4Ref!, { opacity: 1, yPercent: 0, duration: 0.6, ease: 'power2.out' }, 0);
+          const newChars = [...sec4TitleChars[sec4Idx], ...sec4DescChars[sec4Idx]];
+          sec4Tl.to(newChars, {
+            opacity: 1, duration: 0.05,
+            stagger: { amount: 0.5, from: 'random' },
+            ease: 'power2.out',
+          }, 0.15);
+        } else if (isLeaving) {
+          // Content fades out, then container slides away
+          const oldChars = [...sec4TitleChars[prevSec4Idx], ...sec4DescChars[prevSec4Idx]];
+          gsap.set(oldChars, { opacity: 1 });
+          sec4Tl.to(oldChars, {
+            opacity: 0, duration: 0.03,
+            stagger: { amount: 0.3, from: 'random' },
+            ease: 'power2.in',
+          });
+          sec4Tl.to(sec4Ref!, { opacity: 0, yPercent: 50, duration: 0.5, ease: 'power2.in' }, '-=0.1');
+        } else {
+          // Content switch — snap container to final state in case entrance was interrupted
+          gsap.set(sec4Ref!, { opacity: 1, yPercent: 0 });
+          if (prevSec4Idx >= 0) {
+            const oldChars = [...sec4TitleChars[prevSec4Idx], ...sec4DescChars[prevSec4Idx]];
+            gsap.set(oldChars, { opacity: 1 });
+            sec4Tl.to(oldChars, {
+              opacity: 0, duration: 0.03,
+              stagger: { amount: 0.3, from: 'random' },
+              ease: 'power2.in',
+            });
+          }
+          if (sec4Idx >= 0) {
+            const newChars = [...sec4TitleChars[sec4Idx], ...sec4DescChars[sec4Idx]];
+            sec4Tl.to(newChars, {
+              opacity: 1, duration: 0.05,
+              stagger: { amount: 0.5, from: 'random' },
+              ease: 'power2.out',
+            });
+          }
+        }
+
+        prevSec4Idx = sec4Idx;
+      }
 
       floorMaterial.update();
 
@@ -417,6 +500,7 @@ const App: Component = () => {
     // Cleanup
     onCleanup(() => {
       getStartedTl?.kill();
+      sec4Tl?.kill();
       gsap.ticker.remove(animate);
       window.removeEventListener('resize', handleResize);
       mouseParallax.dispose();
@@ -432,23 +516,50 @@ const App: Component = () => {
     <>
       <div ref={containerRef} class="fixed inset-0 w-full h-full" />
       <div ref={pinRef} class="relative w-full h-screen">
-          <div ref={sec2Ref} class="absolute inset-0 flex justify-end px-4 md:px-8" style={{ opacity: 0 }}>
+          <div ref={sec2Ref} class="absolute inset-0 flex justify-end px-4 md:px-8" style={{ opacity: sec2Opacity() }}>
             <div class="w-1/3 flex flex-col gap-6 h-screen justify-center">
               <p class="text-xs font-light text-white leading-tight">
-                Redefining Cross-Border Finance
+                <SplitText text="Redefining Cross-Border Finance" chars={sec2Chars} />
               </p>
-              <div data-sec2-line class="w-full h-2 border border-solid border-b-0 border-white/50"></div>
+              <div ref={sec2LineRef} class="w-full h-2 border border-solid border-b-0 border-white/50" style={{ opacity: sec2LineOpacity() }} />
               <p class="text-gray-300 text-sm md:text-base lg:text-lg leading-relaxed">
-                The global financial landscape is undergoing a fundamental transformation. Traditional correspondent banking networks, built decades ago, remain slow, opaque, and expensive. Settlement windows stretch across days, intermediary fees compound at every hop, and compliance requirements fragment across jurisdictions. For businesses operating internationally, these inefficiencies translate directly into lost revenue and constrained growth.
+                <SplitText text="The global financial landscape is undergoing a fundamental transformation. Traditional correspondent banking networks, built decades ago, remain slow, opaque, and expensive. Settlement windows stretch across days, intermediary fees compound at every hop, and compliance requirements fragment across jurisdictions. For businesses operating internationally, these inefficiencies translate directly into lost revenue and constrained growth." chars={sec2Chars} />
               </p>
             </div>
           </div>
           {/* section3 */}
-          <div ref={sec3Ref} class="absolute inset-0 flex justify-start px-4 md:px-8" style={{ opacity: 0 }}>
+          <div ref={sec3Ref} class="absolute inset-0 flex justify-start px-4 md:px-8" style={{ opacity: sec3Opacity() }}>
             <div class="w-1/2 flex flex-col gap-6 h-screen justify-center">
               <p class="text-9xl font-light text-white leading-tight">
-                Our Services
+                <SplitText text="Our Services" chars={sec3Chars} />
               </p>
+            </div>
+          </div>
+          {/* section4 — fully triggered animations */}
+          <div ref={sec4Ref} class="absolute inset-0 flex justify-end">
+            <div class="w-[40%] flex flex-col gap-6 h-screen justify-between bg-[#1a1e3a]/80 p-4">
+              <div class="relative">
+                {sec4Data.map((item, i) => (
+                  <h1
+                    class={`text-6xl font-light text-white leading-tight ${i > 0 ? 'absolute top-0 left-0 right-0' : ''}`}
+                  >
+                    <SplitText text={item.title} chars={sec4TitleChars[i]} />
+                  </h1>
+                ))}
+              </div>
+              <div>
+                <div class="w-full h-2 border border-solid border-b-0 border-white/50" />
+                <div class="relative mt-4">
+                  {sec4Data.map((item, i) => (
+                    <p
+                      class={`text-base font-light text-white leading-tight ${i > 0 ? 'absolute top-0 left-0 right-0' : ''}`}
+                    >
+                      <SplitText text={item.desc} chars={sec4DescChars[i]} />
+                    </p>
+                  ))}
+                </div>
+              </div>
+              <div></div>
             </div>
           </div>
         {/* Drawer */}
@@ -456,11 +567,13 @@ const App: Component = () => {
           <div ref={backdropRef} class="absolute inset-0 bg-[#0d1033]/80" />
           <div ref={panelRef} class="absolute left-0 top-0 h-full bg-[#0d1033]/95 backdrop-blur-md overflow-y-auto flex items-center" style={{ transform: 'translateX(-100%)' }}>
             <nav class="flex flex-col gap-2 px-6" onMouseLeave={hideDrawer2}>
-              {menuData.map((item, i) => (
-                <a class="text-6xl text-white/70 hover:text-white transition-colors cursor-pointer py-2 flex items-center gap-2"
-                  onMouseEnter={(e) => showDrawer2(i, e)}
-                >{item.label} <span class="i-mdi-light-chevron-right text-2xl" /></a>
-              ))}
+              <For each={menuData}>
+                {(item, i) => (
+                  <a class="text-6xl text-white/70 hover:text-white transition-colors cursor-pointer py-2 flex items-center gap-2"
+                    onMouseEnter={(e) => showDrawer2(i(), e)}
+                  >{item.label} <span class="i-mdi-light-chevron-right text-2xl" /></a>
+                )}
+              </For>
             </nav>
             {/* Divider: line + angular arrow */}
             <div ref={dividerRef} class="absolute right-0 top-0 h-full opacity-0 pointer-events-none" style={{ width: '12px' }}>
@@ -477,7 +590,9 @@ const App: Component = () => {
           </div>
           {/* Drawer2 — 描述面板，clip-path 从左向右延伸 */}
           <div ref={drawer2Ref} class="absolute top-0 h-full bg-[#0d1033]/90 backdrop-blur-md flex items-center justify-center invisible">
-            {activeIndex() >= 0 && menuData[activeIndex()].content()}
+            <Show when={activeIndex() >= 0}>
+              {menuData[activeIndex()].content()}
+            </Show>
           </div>
         </div>
         <div class="absolute inset-0 flex flex-col justify-between overflow-hidden">
@@ -506,7 +621,7 @@ const App: Component = () => {
                 onMouseLeave={() => getStartedTl?.reverse()}
               >
                 {/* Header — 固定高度，蒙版和箭头锚定在此 */}
-                <div class="relative flex items-center gap-1 px-4 h-20">
+                <div ref={headerRef} class="relative flex items-center gap-1 px-4 h-20">
                   <p class="font-700">Get Started</p>
                   {/* 白色蒙版 */}
                   <div
@@ -525,22 +640,22 @@ const App: Component = () => {
                   <div class="mx-1 h-px bg-white/30" />
                   <a class="block py-2 text-white/70 lg:text-xl hover:text-white transition-colors cursor-pointer">Contact</a>
                 </div>
-              </div>                
+              </div>
             </div>
             <div ref={heroRef} class="lg:text-right lg:flex-1">
               <h1 class="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-light leading-[0.95] tracking-tight">
-                <span class="text-orange-500">Capital</span>
+                <SplitText text="Capital" class="text-orange-500" chars={heroChars} />
                 <br />
-                <span class="text-white">Without</span>
+                <SplitText text="Without" class="text-white" chars={heroChars} />
                 <br />
-                <span class="text-white">Borders</span>
+                <SplitText text="Borders" class="text-white" chars={heroChars} />
               </h1>
-            </div>                
+            </div>
           </nav>
-          <div ref={descRef} class="relative px-4 md:px-4 mt-8 md:mt-16 lg:mt-24 gap-8 lg:gap-0">
+          <div ref={descRef} class="relative px-4 md:px-4 mt-8 md:mt-16 lg:mt-24 gap-8 lg:gap-0" style={{ opacity: descOpacity() }}>
             <div class="bg-[#1a1e3a]/80 backdrop-blur-sm rounded-lg max-w-2xl flex flex-col justify-between mb-8 p-4 h-[30vh]">
               <p class="text-gray-300 text-sm md:text-base lg:text-xl leading-relaxed">
-                  By combining blockchain infrastructure, compliant custody, and real-time settlement, Flow Capital enables seamless international transfers, treasury operations, and digital asset liquidity management for the modern global economy.
+                <SplitText text="By combining blockchain infrastructure, compliant custody, and real-time settlement, Flow Capital enables seamless international transfers, treasury operations, and digital asset liquidity management for the modern global economy." chars={descChars} />
               </p>
               <div data-flicker-btn class="bg-white/10 mt-6 w-10 h-10 flex items-center justify-center rounded-md text-gray hover:text-white transition-colors self-end cursor-pointer">
                 <span class="i-mdi-light-chevron-down text-2xl" />

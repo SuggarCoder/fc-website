@@ -6,11 +6,72 @@
     <meta name="theme-color" content="#000000" />
     <link rel="icon" href="/flow.ico" />
     <title>Solid App</title>
+    <style>
+      html { overflow-x: hidden; overflow-y: scroll; scrollbar-width: none; }
+      .sb { position: fixed; right: 0; top: 0; width: 20px; height: 100vh; z-index: 9999; }
+      .sb-thumb { position: absolute; right: 0; width: 6px; border-radius: 3px; background: rgba(111,115,138,0.5); opacity: 0; transition: opacity 0.3s; cursor: grab; }
+      .sb-show .sb-thumb { opacity: 1; }
+      .sb-dragging .sb-thumb { opacity: 1; background: rgba(111,115,138,0.8); cursor: grabbing; }
+      @media (pointer: coarse) { .sb { display: none; } }
+    </style>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
 
     <script src="/src/index.tsx" type="module"></script>
+    <script>
+      (function(){
+        var sb=document.createElement('div'),th=document.createElement('div');
+        sb.className='sb';th.className='sb-thumb';sb.appendChild(th);document.body.appendChild(sb);
+        var edge=40,dragging=false,dragStartY=0,dragStartScroll=0,tH=0;
+
+        function update(){
+          var h=document.documentElement,st=h.scrollTop,sh=h.scrollHeight,ch=h.clientHeight;
+          if(sh<=ch){th.style.display='none';return;}
+          th.style.display='';
+          tH=Math.max(ch/sh*ch,24);
+          th.style.height=tH+'px';
+          th.style.top=st/(sh-ch)*(ch-tH)+'px';
+        }
+
+        window.addEventListener('scroll',function(){if(!dragging)update()},{passive:true});
+        window.addEventListener('resize',update);
+        update();
+
+        document.addEventListener('mousemove',function(e){
+          if(!dragging){
+            if(e.clientX>=window.innerWidth-edge)sb.classList.add('sb-show');
+            else sb.classList.remove('sb-show');
+          }
+        });
+
+        th.addEventListener('mousedown',function(e){
+          e.preventDefault();
+          dragging=true;
+          dragStartY=e.clientY;
+          dragStartScroll=document.documentElement.scrollTop;
+          sb.classList.add('sb-dragging');
+          document.body.style.userSelect='none';
+        });
+
+        document.addEventListener('mousemove',function(e){
+          if(!dragging)return;
+          var h=document.documentElement,sh=h.scrollHeight,ch=h.clientHeight;
+          var trackH=ch-tH;
+          var dy=e.clientY-dragStartY;
+          var scrollRange=sh-ch;
+          document.documentElement.scrollTop=dragStartScroll+dy*(scrollRange/trackH);
+          update();
+        });
+
+        document.addEventListener('mouseup',function(){
+          if(!dragging)return;
+          dragging=false;
+          sb.classList.remove('sb-dragging');
+          document.body.style.userSelect='';
+        });
+      })();
+    </script>
   </body>
 </html>
