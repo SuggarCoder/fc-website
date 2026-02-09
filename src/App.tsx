@@ -1,4 +1,5 @@
 import { type Component, onMount, onCleanup, createSignal, For, Show } from 'solid-js';
+import * as THREE from 'three';
 import gsap from 'gsap';
 import { BG_COLOR, PostParams, CameraConfig } from './config';
 import { createScene } from './scene/createScene';
@@ -83,6 +84,21 @@ const sec4Data = [
   },
 ];
 
+const sec6Data = [
+  {
+    title: 'Initiate Transfer',
+    desc: "Every transaction begins with a clear intent: moving capital across borders with precision and control. Through Flow Capital’s dashboard or API, clients initiate a payment or settlement request by defining the amount, destination, currency, and settlement preferences. Our system immediately validates the request structure and parameters, ensuring accuracy before execution. Whether triggered manually or programmatically, each transfer enters a unified workflow designed for speed and reliability. From the first interaction, clients gain full visibility into the transaction lifecycle, setting the foundation for a seamless and transparent cross-border experience.",
+  },
+  {
+    title: 'Crypto Rail Settlement',
+    desc: 'Once initiated, funds move onto Flow Capital’s crypto-powered settlement rails. Instead of passing through multiple correspondent banks, transactions are routed through secure blockchain infrastructure, enabling near real-time settlement and continuous availability. This architecture reduces delays, minimizes intermediaries, and enhances transparency throughout the transfer. Each movement is cryptographically secured and traceable, providing a clear record of settlement progress. By leveraging blockchain as a settlement layer—not speculation—Flow Capital delivers faster finality and more efficient capital movement across global markets.',
+  },
+  {
+    title: 'Local Payout',
+    desc: "With settlement complete, funds arrive at their final destination. Flow Capital enables local payout in the client’s chosen currency or digital asset, delivering predictable settlement outcomes and clear confirmation. Whether converting to fiat, retaining digital assets, or redistributing capital internally, payouts are executed efficiently and transparently. Clients receive full reporting and transaction records, supporting reconciliation, audit, and treasury operations. The result is a complete end-to-end flow—capital initiated globally, settled securely, and delivered locally with speed and confidence.",
+  },
+];
+
 const App: Component = () => {
   let containerRef: HTMLDivElement | undefined;
   let line1Ref: HTMLSpanElement | undefined;
@@ -104,16 +120,14 @@ const App: Component = () => {
   let sec2LineRef: HTMLDivElement | undefined;
   let sec3Ref: HTMLDivElement | undefined;
   let sec4Ref: HTMLDivElement | undefined;
+  let sec5Ref: HTMLDivElement | undefined;
+  let sec6Ref: HTMLDivElement | undefined;
   let getStartedTl: gsap.core.Timeline | undefined;
   let drawer2Tl: gsap.core.Timeline | undefined;
 
   const [menuOpen, setMenuOpen] = createSignal(false);
   const [activeIndex, setActiveIndex] = createSignal(-1);
   const [arrowY, setArrowY] = createSignal(0);
-  const [descOpacity, setDescOpacity] = createSignal(1);
-  const [sec2Opacity, setSec2Opacity] = createSignal(0);
-  const [sec2LineOpacity, setSec2LineOpacity] = createSignal(0);
-  const [sec3Opacity, setSec3Opacity] = createSignal(0);
   const [drawer2Open, setDrawer2Open] = createSignal(false);
   const [pathReady, setPathReady] = createSignal(false);
   const isMobile = false;
@@ -125,6 +139,9 @@ const App: Component = () => {
   const sec3Chars: HTMLSpanElement[] = [];
   const sec4TitleChars: HTMLSpanElement[][] = [[], [], []];
   const sec4DescChars: HTMLSpanElement[][] = [[], [], []];
+  const sec5Chars: HTMLSpanElement[] = [];
+  const sec6TitleChars: HTMLSpanElement[][] = [[], [], []];
+  const sec6DescChars: HTMLSpanElement[][] = [[], [], []];
 
   let menuTl: gsap.core.Timeline | undefined;
   const menuProxy = { t: 0 };
@@ -278,43 +295,282 @@ const App: Component = () => {
         ease: 'power2.inOut',
       }, 0);
 
-    // Build random-letter fade timelines (scrubbed by scroll)
-    // Uses `amount` instead of `each` so stagger ratio is consistent regardless of char count
-    const buildFadeOutTl = (chars: HTMLSpanElement[]): gsap.core.Timeline => {
-      const tl = gsap.timeline({ paused: true });
-      if (chars.length === 0) return tl;
-      tl.to(chars, { opacity: 0, duration: 0.3, stagger: { amount: 0.7, from: 'random' }, ease: 'power2.in' });
-      return tl;
-    };
-    const buildFadeInTl = (chars: HTMLSpanElement[]): gsap.core.Timeline => {
-      const tl = gsap.timeline({ paused: true });
-      if (chars.length === 0) return tl;
-      gsap.set(chars, { opacity: 0 });
-      tl.to(chars, { opacity: 1, duration: 0.3, stagger: { amount: 0.7, from: 'random' }, ease: 'power2.out' });
-      return tl;
-    };
-
-    // Hero & desc — fade out
-    const heroFadeTl = buildFadeOutTl(heroChars);
-    const descFadeTl = buildFadeOutTl(descChars);
-
-    // Section 2 — fade in + fade out
-    const sec2FadeInTl = buildFadeInTl(sec2Chars);
-    const sec2FadeOutTl = buildFadeOutTl(sec2Chars);
-
-    // Section 3 — fade in
-    const sec3FadeInTl = buildFadeInTl(sec3Chars);
-
-    // Section 4 — fully triggered (not scrubbed)
+    // ── Master scroll timeline (scrubbed by scrollSystem.progress) ──
+    // Initial states
+    gsap.set(sec2Chars, { opacity: 0 });
+    gsap.set(sec3Chars, { opacity: 0 });
+    gsap.set(sec5Chars, { opacity: 0 });
     sec4TitleChars.forEach(chars => gsap.set(chars, { opacity: 0 }));
     sec4DescChars.forEach(chars => gsap.set(chars, { opacity: 0 }));
     gsap.set(sec4Ref!, { opacity: 0, yPercent: 50 });
+    sec6TitleChars.forEach(chars => gsap.set(chars, { opacity: 0 }));
+    sec6DescChars.forEach(chars => gsap.set(chars, { opacity: 0 }));
+    gsap.set(sec6Ref!, { opacity: 0, yPercent: 50 });
+
+    // Triggered animation state (sec4 + sec3/4 exit, sec6 + sec5/6 exit)
     let prevSec4Idx = -1;
     let sec4Tl: gsap.core.Timeline | null = null;
-
-    // Section 3 + 4 combined exit at progress 0.64 (triggered)
     let sec34Exited = false;
     let sec34ExitTl: gsap.core.Timeline | null = null;
+
+    let prevSec6Idx = -1;
+    let sec6Tl: gsap.core.Timeline | null = null;
+    let sec56Exited = false;
+    let sec56ExitTl: gsap.core.Timeline | null = null;
+
+    const scrollTl = gsap.timeline({
+      paused: true,
+      onUpdate: () => {
+        const p = scrollTl.progress();
+
+        // ── 0.40→: sec4 triggered (plays at own speed) ──
+        const sec4Start = 0.40;
+        const sec4Step = 0.08;
+        let sec4Idx = p >= sec4Start
+          ? Math.min(2, Math.floor((p - sec4Start) / sec4Step))
+          : -1;
+
+        if (sec4Idx !== prevSec4Idx && !sec34Exited) {
+          if (sec4Tl) sec4Tl.kill();
+          // Kill orphaned tweens then force clean state
+          gsap.killTweensOf(sec4Ref!);
+          sec4TitleChars.forEach(chars => { gsap.killTweensOf(chars); gsap.set(chars, { opacity: 0 }); });
+          sec4DescChars.forEach(chars => { gsap.killTweensOf(chars); gsap.set(chars, { opacity: 0 }); });
+
+          sec4Tl = gsap.timeline();
+          const isEntering = prevSec4Idx === -1 && sec4Idx >= 0;
+          const isLeaving = prevSec4Idx >= 0 && sec4Idx === -1;
+
+          if (isEntering) {
+            sec4Tl.to(sec4Ref!, { opacity: 1, yPercent: 0, duration: 0.6, ease: 'power2.out' }, 0);
+            const newChars = [...sec4TitleChars[sec4Idx], ...sec4DescChars[sec4Idx]];
+            sec4Tl.to(newChars, {
+              opacity: 1, duration: 0.05,
+              stagger: { amount: 0.5, from: 'random' },
+              ease: 'power2.out',
+            }, 0.15);
+          } else if (isLeaving) {
+            // Chars already reset to 0, just exit container
+            sec4Tl.to(sec4Ref!, { opacity: 0, yPercent: 50, duration: 0.5, ease: 'power2.in' });
+          } else {
+            // Switch: old already hidden by reset, only fade in new
+            gsap.set(sec4Ref!, { opacity: 1, yPercent: 0 });
+            if (sec4Idx >= 0) {
+              const newChars = [...sec4TitleChars[sec4Idx], ...sec4DescChars[sec4Idx]];
+              sec4Tl.to(newChars, {
+                opacity: 1, duration: 0.05,
+                stagger: { amount: 0.5, from: 'random' },
+                ease: 'power2.out',
+              });
+            }
+          }
+          prevSec4Idx = sec4Idx;
+        }
+
+        // ── 0.64: sec3 + sec4 combined exit (triggered) ──
+        const shouldExit = p >= 0.64;
+        if (shouldExit !== sec34Exited) {
+          sec34Exited = shouldExit;
+          if (sec34ExitTl) sec34ExitTl.kill();
+
+          if (shouldExit) {
+            if (sec4Tl) { sec4Tl.kill(); sec4Tl = null; }
+            gsap.killTweensOf(sec4Ref!);
+            sec4TitleChars.forEach(chars => gsap.killTweensOf(chars));
+            sec4DescChars.forEach(chars => gsap.killTweensOf(chars));
+            sec34ExitTl = gsap.timeline();
+            sec34ExitTl.to(sec3Chars, {
+              opacity: 0, duration: 0.03,
+              stagger: { amount: 0.3, from: 'random' },
+              ease: 'power2.in',
+              onComplete: () => { gsap.set(sec3Ref!, { opacity: 0 }); },
+            }, 0);
+            const activeSec4Chars = prevSec4Idx >= 0
+              ? [...sec4TitleChars[prevSec4Idx], ...sec4DescChars[prevSec4Idx]]
+              : [];
+            if (activeSec4Chars.length) {
+              sec34ExitTl.to(activeSec4Chars, {
+                opacity: 0, duration: 0.03,
+                stagger: { amount: 0.3, from: 'random' },
+                ease: 'power2.in',
+              }, 0);
+            }
+            sec34ExitTl.to(sec4Ref!, {
+              opacity: 0, yPercent: 50, duration: 0.5, ease: 'power2.in',
+            }, 0.2);
+          } else {
+            prevSec4Idx = sec4Idx;
+            sec34ExitTl = gsap.timeline();
+            gsap.set(sec3Ref!, { opacity: 1 });
+            sec34ExitTl.to(sec3Chars, {
+              opacity: 1, duration: 0.05,
+              stagger: { amount: 0.5, from: 'random' },
+              ease: 'power2.out',
+            }, 0);
+            sec34ExitTl.to(sec4Ref!, {
+              opacity: 1, yPercent: 0, duration: 0.5, ease: 'power2.out',
+            }, 0);
+            if (sec4Idx >= 0) {
+              sec4TitleChars.forEach(chars => gsap.set(chars, { opacity: 0 }));
+              sec4DescChars.forEach(chars => gsap.set(chars, { opacity: 0 }));
+              const chars = [...sec4TitleChars[sec4Idx], ...sec4DescChars[sec4Idx]];
+              sec34ExitTl.to(chars, {
+                opacity: 1, duration: 0.05,
+                stagger: { amount: 0.5, from: 'random' },
+                ease: 'power2.out',
+              }, 0.15);
+            }
+          }
+        }
+
+        // ── 0.84→: sec6 triggered (plays at own speed) ──
+        const sec6Start = 0.84;
+        const sec6Step = 0.04;
+        let sec6Idx = p >= sec6Start
+          ? Math.min(2, Math.floor((p - sec6Start) / sec6Step))
+          : -1;
+
+        if (sec6Idx !== prevSec6Idx && !sec56Exited) {
+          if (sec6Tl) sec6Tl.kill();
+          gsap.killTweensOf(sec6Ref!);
+          sec6TitleChars.forEach(chars => { gsap.killTweensOf(chars); gsap.set(chars, { opacity: 0 }); });
+          sec6DescChars.forEach(chars => { gsap.killTweensOf(chars); gsap.set(chars, { opacity: 0 }); });
+
+          sec6Tl = gsap.timeline();
+          const isEntering = prevSec6Idx === -1 && sec6Idx >= 0;
+          const isLeaving = prevSec6Idx >= 0 && sec6Idx === -1;
+
+          if (isEntering) {
+            sec6Tl.to(sec6Ref!, { opacity: 1, yPercent: 0, duration: 0.6, ease: 'power2.out' }, 0);
+            const newChars = [...sec6TitleChars[sec6Idx], ...sec6DescChars[sec6Idx]];
+            sec6Tl.to(newChars, {
+              opacity: 1, duration: 0.05,
+              stagger: { amount: 0.5, from: 'random' },
+              ease: 'power2.out',
+            }, 0.15);
+          } else if (isLeaving) {
+            sec6Tl.to(sec6Ref!, { opacity: 0, yPercent: 50, duration: 0.5, ease: 'power2.in' });
+          } else {
+            gsap.set(sec6Ref!, { opacity: 1, yPercent: 0 });
+            if (sec6Idx >= 0) {
+              const newChars = [...sec6TitleChars[sec6Idx], ...sec6DescChars[sec6Idx]];
+              sec6Tl.to(newChars, {
+                opacity: 1, duration: 0.05,
+                stagger: { amount: 0.5, from: 'random' },
+                ease: 'power2.out',
+              });
+            }
+          }
+          prevSec6Idx = sec6Idx;
+        }
+
+        // ── 0.96: sec5 + sec6 combined exit (triggered) ──
+        const shouldExit56 = p >= 0.96;
+        if (shouldExit56 !== sec56Exited) {
+          sec56Exited = shouldExit56;
+          if (sec56ExitTl) sec56ExitTl.kill();
+
+          if (shouldExit56) {
+            if (sec6Tl) { sec6Tl.kill(); sec6Tl = null; }
+            gsap.killTweensOf(sec6Ref!);
+            sec6TitleChars.forEach(chars => gsap.killTweensOf(chars));
+            sec6DescChars.forEach(chars => gsap.killTweensOf(chars));
+            sec56ExitTl = gsap.timeline();
+            sec56ExitTl.to(sec5Chars, {
+              opacity: 0, duration: 0.03,
+              stagger: { amount: 0.3, from: 'random' },
+              ease: 'power2.in',
+              onComplete: () => { gsap.set(sec5Ref!, { opacity: 0 }); },
+            }, 0);
+            const activeSec6Chars = prevSec6Idx >= 0
+              ? [...sec6TitleChars[prevSec6Idx], ...sec6DescChars[prevSec6Idx]]
+              : [];
+            if (activeSec6Chars.length) {
+              sec56ExitTl.to(activeSec6Chars, {
+                opacity: 0, duration: 0.03,
+                stagger: { amount: 0.3, from: 'random' },
+                ease: 'power2.in',
+              }, 0);
+            }
+            sec56ExitTl.to(sec6Ref!, {
+              opacity: 0, yPercent: 50, duration: 0.5, ease: 'power2.in',
+            }, 0.2);
+          } else {
+            prevSec6Idx = sec6Idx;
+            sec56ExitTl = gsap.timeline();
+            gsap.set(sec5Ref!, { opacity: 1 });
+            sec56ExitTl.to(sec5Chars, {
+              opacity: 1, duration: 0.05,
+              stagger: { amount: 0.5, from: 'random' },
+              ease: 'power2.out',
+            }, 0);
+            sec56ExitTl.to(sec6Ref!, {
+              opacity: 1, yPercent: 0, duration: 0.5, ease: 'power2.out',
+            }, 0);
+            if (sec6Idx >= 0) {
+              sec6TitleChars.forEach(chars => gsap.set(chars, { opacity: 0 }));
+              sec6DescChars.forEach(chars => gsap.set(chars, { opacity: 0 }));
+              const chars = [...sec6TitleChars[sec6Idx], ...sec6DescChars[sec6Idx]];
+              sec56ExitTl.to(chars, {
+                opacity: 1, duration: 0.05,
+                stagger: { amount: 0.5, from: 'random' },
+                ease: 'power2.out',
+              }, 0.15);
+            }
+          }
+        }
+      },
+    });
+
+    // 0.00–0.08: Hero & desc fade out
+    scrollTl.to(heroChars, {
+      opacity: 0, duration: 0.024,
+      stagger: { amount: 0.056, from: 'random' },
+      ease: 'power2.in',
+    }, 0);
+    scrollTl.to(descChars, {
+      opacity: 0, duration: 0.024,
+      stagger: { amount: 0.056, from: 'random' },
+      ease: 'power2.in',
+    }, 0);
+    scrollTl.to(descRef!, { opacity: 0, duration: 0.08, ease: 'none' }, 0);
+
+    // 0.10–0.18: Sec2 fade in
+    scrollTl.set(sec2Ref!, { opacity: 1 }, 0.10);
+    scrollTl.to(sec2Chars, {
+      opacity: 1, duration: 0.024,
+      stagger: { amount: 0.056, from: 'random' },
+      ease: 'power2.out',
+    }, 0.10);
+    scrollTl.to(sec2LineRef!, { opacity: 1, duration: 0.08, ease: 'none' }, 0.10);
+
+    // 0.20–0.26: Sec2 fade out
+    scrollTl.to(sec2Chars, {
+      opacity: 0, duration: 0.018,
+      stagger: { amount: 0.042, from: 'random' },
+      ease: 'power2.in',
+    }, 0.20);
+    scrollTl.to(sec2LineRef!, { opacity: 0, duration: 0.06, ease: 'none' }, 0.20);
+    scrollTl.set(sec2Ref!, { opacity: 0 }, 0.26);
+
+    // 0.28–0.32: Sec3 fade in
+    scrollTl.set(sec3Ref!, { opacity: 1 }, 0.28);
+    scrollTl.to(sec3Chars, {
+      opacity: 1, duration: 0.012,
+      stagger: { amount: 0.028, from: 'random' },
+      ease: 'power2.out',
+    }, 0.28);
+
+    // 0.80–0.84: Sec5 fade in
+    scrollTl.set(sec5Ref!, { opacity: 1 }, 0.80);
+    scrollTl.to(sec5Chars, {
+      opacity: 1, duration: 0.012,
+      stagger: { amount: 0.028, from: 'random' },
+      ease: 'power2.out',
+    }, 0.80);
+
+    // Anchor end at progress = 1
+    scrollTl.set({}, {}, 1);
 
     // Initialize scene
     const scene = createScene(BG_COLOR);
@@ -408,159 +664,8 @@ const App: Component = () => {
         (mesh.material as THREE.MeshBasicMaterial).opacity = alpha;
       });
 
-      // ── Scroll-driven section transitions ──
-      // 0→0.08: hero & desc fade out
-      const flickerT = mapRange(progress, 0, 0.08, 0, 1, true);
-      heroFadeTl.progress(flickerT);
-      descFadeTl.progress(flickerT);
-      setDescOpacity(1 - flickerT);
-
-      // 0.10→0.18: sec2 letters fade in + container fade in
-      const sec2InT = mapRange(progress, 0.10, 0.18, 0, 1, true);
-      // 0.18→0.20: sec2 hold, 0.20→0.26: sec2 letters fade out + container fade out
-      const sec2OutT = mapRange(progress, 0.20, 0.26, 0, 1, true);
-      sec2FadeInTl.progress(sec2InT);
-      sec2FadeOutTl.progress(sec2OutT);
-      const sec2Visible = sec2InT > 0 && sec2OutT < 1;
-      setSec2Opacity(sec2Visible ? 1 : 0);
-      const lineAlpha = sec2OutT > 0 ? 1 - sec2OutT : sec2InT;
-      setSec2LineOpacity(lineAlpha);
-
-      // 0.24→0.28: gap
-      // 0.28→0.32: sec3 letters fade in (container visibility toggles)
-      const sec3InT = mapRange(progress, 0.28, 0.32, 0, 1, true);
-      sec3FadeInTl.progress(sec3InT);
-      setSec3Opacity(sec3InT > 0 ? 1 : 0);
-
-      // 0.40→: sec4 — fully triggered, step = 0.08
-      const sec4Start = 0.40;
-      const sec4Step = 0.08;
-      let sec4Idx = -1;
-      if (progress >= sec4Start) {
-        sec4Idx = Math.min(2, Math.floor((progress - sec4Start) / sec4Step));
-      }
-
-      if (sec4Idx !== prevSec4Idx && !sec34Exited) {
-        if (sec4Tl) sec4Tl.kill();
-        // Reset all chars to prevent overlap from killed animations
-        sec4TitleChars.forEach(chars => gsap.set(chars, { opacity: 0 }));
-        sec4DescChars.forEach(chars => gsap.set(chars, { opacity: 0 }));
-
-        sec4Tl = gsap.timeline();
-
-        const isEntering = prevSec4Idx === -1 && sec4Idx >= 0;
-        const isLeaving = prevSec4Idx >= 0 && sec4Idx === -1;
-
-        if (isEntering) {
-          // Container slides up + first content fades in simultaneously
-          sec4Tl.to(sec4Ref!, { opacity: 1, yPercent: 0, duration: 0.6, ease: 'power2.out' }, 0);
-          const newChars = [...sec4TitleChars[sec4Idx], ...sec4DescChars[sec4Idx]];
-          sec4Tl.to(newChars, {
-            opacity: 1, duration: 0.05,
-            stagger: { amount: 0.5, from: 'random' },
-            ease: 'power2.out',
-          }, 0.15);
-        } else if (isLeaving) {
-          // Content fades out, then container slides away
-          const oldChars = [...sec4TitleChars[prevSec4Idx], ...sec4DescChars[prevSec4Idx]];
-          gsap.set(oldChars, { opacity: 1 });
-          sec4Tl.to(oldChars, {
-            opacity: 0, duration: 0.03,
-            stagger: { amount: 0.3, from: 'random' },
-            ease: 'power2.in',
-          });
-          sec4Tl.to(sec4Ref!, { opacity: 0, yPercent: 50, duration: 0.5, ease: 'power2.in' }, '-=0.1');
-        } else {
-          // Content switch — snap container to final state in case entrance was interrupted
-          gsap.set(sec4Ref!, { opacity: 1, yPercent: 0 });
-          if (prevSec4Idx >= 0) {
-            const oldChars = [...sec4TitleChars[prevSec4Idx], ...sec4DescChars[prevSec4Idx]];
-            gsap.set(oldChars, { opacity: 1 });
-            sec4Tl.to(oldChars, {
-              opacity: 0, duration: 0.03,
-              stagger: { amount: 0.3, from: 'random' },
-              ease: 'power2.in',
-            });
-          }
-          if (sec4Idx >= 0) {
-            const newChars = [...sec4TitleChars[sec4Idx], ...sec4DescChars[sec4Idx]];
-            sec4Tl.to(newChars, {
-              opacity: 1, duration: 0.05,
-              stagger: { amount: 0.5, from: 'random' },
-              ease: 'power2.out',
-            });
-          }
-        }
-
-        prevSec4Idx = sec4Idx;
-      }
-
-      // 0.64: sec3 + sec4 combined exit (triggered)
-      const shouldExit = progress >= 0.64;
-      if (shouldExit !== sec34Exited) {
-        sec34Exited = shouldExit;
-        if (sec34ExitTl) sec34ExitTl.kill();
-
-        if (shouldExit) {
-          // Kill any running sec4 content animation
-          if (sec4Tl) { sec4Tl.kill(); sec4Tl = null; }
-
-          sec34ExitTl = gsap.timeline();
-
-          // Sec3: random letter fade out
-          sec34ExitTl.to(sec3Chars, {
-            opacity: 0, duration: 0.03,
-            stagger: { amount: 0.3, from: 'random' },
-            ease: 'power2.in',
-            onComplete: () => setSec3Opacity(0),
-          }, 0);
-
-          // Sec4: active content random letter fade out + container slide away
-          const activeSec4Chars = prevSec4Idx >= 0
-            ? [...sec4TitleChars[prevSec4Idx], ...sec4DescChars[prevSec4Idx]]
-            : [];
-          if (activeSec4Chars.length) {
-            sec34ExitTl.to(activeSec4Chars, {
-              opacity: 0, duration: 0.03,
-              stagger: { amount: 0.3, from: 'random' },
-              ease: 'power2.in',
-            }, 0);
-          }
-          sec34ExitTl.to(sec4Ref!, {
-            opacity: 0, yPercent: 50, duration: 0.5, ease: 'power2.in',
-          }, 0.2);
-        } else {
-          // Scrolling back: restore sec3 + sec4
-          // Sync prevSec4Idx to current progress so sec4 switching won't fire spuriously
-          prevSec4Idx = sec4Idx;
-
-          sec34ExitTl = gsap.timeline();
-
-          // Restore sec3
-          setSec3Opacity(1);
-          sec34ExitTl.to(sec3Chars, {
-            opacity: 1, duration: 0.05,
-            stagger: { amount: 0.5, from: 'random' },
-            ease: 'power2.out',
-          }, 0);
-
-          // Restore sec4 container + content matching current progress
-          sec34ExitTl.to(sec4Ref!, {
-            opacity: 1, yPercent: 0, duration: 0.5, ease: 'power2.out',
-          }, 0);
-          if (sec4Idx >= 0) {
-            // Reset all then fade in the correct content
-            sec4TitleChars.forEach(chars => gsap.set(chars, { opacity: 0 }));
-            sec4DescChars.forEach(chars => gsap.set(chars, { opacity: 0 }));
-            const chars = [...sec4TitleChars[sec4Idx], ...sec4DescChars[sec4Idx]];
-            sec34ExitTl.to(chars, {
-              opacity: 1, duration: 0.05,
-              stagger: { amount: 0.5, from: 'random' },
-              ease: 'power2.out',
-            }, 0.15);
-          }
-        }
-      }
+      // ── All scroll-driven transitions (scrubbed + triggered via onUpdate) ──
+      scrollTl.progress(progress);
 
       floorMaterial.update();
 
@@ -570,9 +675,16 @@ const App: Component = () => {
 
     // Cleanup
     onCleanup(() => {
+      // Kill all GSAP timelines
       getStartedTl?.kill();
+      scrollTl.kill();
       sec4Tl?.kill();
       sec34ExitTl?.kill();
+      sec6Tl?.kill();
+      sec56ExitTl?.kill();
+      menuTl?.kill();
+      drawer2Tl?.kill();
+
       gsap.ticker.remove(animate);
       window.removeEventListener('resize', handleResize);
       mouseParallax.dispose();
@@ -580,7 +692,7 @@ const App: Component = () => {
       controls.dispose();
       floorMaterial.dispose();
       renderer.dispose();
-      containerRef?.removeChild(renderer.domElement);
+      renderer.domElement.remove();
     });
   });
 
@@ -588,19 +700,19 @@ const App: Component = () => {
     <>
       <div ref={containerRef} class="fixed inset-0 w-full h-full" />
       <div ref={pinRef} class="relative w-full h-screen">
-          <div ref={sec2Ref} class="absolute inset-0 flex justify-end px-4 md:px-8" style={{ opacity: sec2Opacity() }}>
+          <div ref={sec2Ref} class="absolute inset-0 flex justify-end px-4 md:px-8" style={{ opacity: 0 }}>
             <div class="w-1/3 flex flex-col gap-6 h-screen justify-center">
               <p class="text-xs font-light text-white leading-tight">
                 <SplitText text="Redefining Cross-Border Finance" chars={sec2Chars} />
               </p>
-              <div ref={sec2LineRef} class="w-full h-2 border border-solid border-b-0 border-white/50" style={{ opacity: sec2LineOpacity() }} />
+              <div ref={sec2LineRef} class="w-full h-2 border border-solid border-b-0 border-white/50" style={{ opacity: 0 }} />
               <p class="text-gray-300 text-sm md:text-base lg:text-lg leading-relaxed">
                 <SplitText text="The global financial landscape is undergoing a fundamental transformation. Traditional correspondent banking networks, built decades ago, remain slow, opaque, and expensive. Settlement windows stretch across days, intermediary fees compound at every hop, and compliance requirements fragment across jurisdictions. For businesses operating internationally, these inefficiencies translate directly into lost revenue and constrained growth." chars={sec2Chars} />
               </p>
             </div>
           </div>
           {/* section3 */}
-          <div ref={sec3Ref} class="absolute inset-0 flex justify-start px-4 md:px-8" style={{ opacity: sec3Opacity() }}>
+          <div ref={sec3Ref} class="absolute inset-0 flex justify-start px-4 md:px-8" style={{ opacity: 0 }}>
             <div class="w-1/2 flex flex-col gap-6 h-screen justify-center">
               <p class="text-9xl font-light text-white leading-tight">
                 <SplitText text="Our Services" chars={sec3Chars} />
@@ -627,6 +739,41 @@ const App: Component = () => {
                       class={`text-base font-light text-white leading-tight ${i > 0 ? 'absolute top-0 left-0 right-0' : ''}`}
                     >
                       <SplitText text={item.desc} chars={sec4DescChars[i]} />
+                    </p>
+                  ))}
+                </div>
+              </div>
+              <div></div>
+            </div>
+          </div>
+          {/* section5 */}
+          <div ref={sec5Ref} class="absolute inset-0 flex justify-start px-4 md:px-8" style={{ opacity: 0 }}>
+            <div class="w-1/2 flex flex-col gap-6 h-screen justify-center">
+              <p class="text-9xl font-light text-white leading-tight">
+                <SplitText text="Capital Flow" chars={sec5Chars} />
+              </p>
+            </div>
+          </div>
+          {/* section6 — triggered animations */}
+          <div ref={sec6Ref} class="absolute inset-0 flex justify-end">
+            <div class="w-[40%] flex flex-col gap-6 h-screen justify-between bg-[#1a1e3a]/80 p-4">
+              <div class="relative">
+                {sec6Data.map((item, i) => (
+                  <h1
+                    class={`text-6xl font-light text-white leading-tight ${i > 0 ? 'absolute top-0 left-0 right-0' : ''}`}
+                  >
+                    <SplitText text={item.title} chars={sec6TitleChars[i]} />
+                  </h1>
+                ))}
+              </div>
+              <div>
+                <div class="w-full h-2 border border-solid border-b-0 border-white/50" />
+                <div class="relative mt-4">
+                  {sec6Data.map((item, i) => (
+                    <p
+                      class={`text-base font-light text-white leading-tight ${i > 0 ? 'absolute top-0 left-0 right-0' : ''}`}
+                    >
+                      <SplitText text={item.desc} chars={sec6DescChars[i]} />
                     </p>
                   ))}
                 </div>
@@ -724,7 +871,7 @@ const App: Component = () => {
               </h1>
             </div>
           </nav>
-          <div ref={descRef} class="relative px-4 md:px-4 mt-8 md:mt-16 lg:mt-24 gap-8 lg:gap-0" style={{ opacity: descOpacity() }}>
+          <div ref={descRef} class="relative px-4 md:px-4 mt-8 md:mt-16 lg:mt-24 gap-8 lg:gap-0" >
             <div class="bg-[#1a1e3a]/80 backdrop-blur-sm rounded-lg max-w-2xl flex flex-col justify-between mb-8 p-4 h-[30vh]">
               <p class="text-gray-300 text-sm md:text-base lg:text-xl leading-relaxed">
                 <SplitText text="By combining blockchain infrastructure, compliant custody, and real-time settlement, Flow Capital enables seamless international transfers, treasury operations, and digital asset liquidity management for the modern global economy." chars={descChars} />

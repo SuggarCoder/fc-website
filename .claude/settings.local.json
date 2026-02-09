@@ -1,12 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pnpm add:*)",
-      "Bash(pnpm build:*)",
-      "Bash(pnpm dev)",
-      "Bash(git checkout:*)",
-      "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(pnpm update:*)"
+      "Bash(npx tsc:*)"
     ]
   }
 }
