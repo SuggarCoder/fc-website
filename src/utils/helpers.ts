@@ -22,3 +22,58 @@ export const mapRange = (
   const result = (value - inMin) / (inMax - inMin) * (outMax - outMin) + outMin;
   return clamp ? Math.max(min, Math.min(max, result)) : result;
 };
+
+// ── Flicker helpers (matching CSS @keyframes exactly) ──────────────
+// Each frame = [progress-threshold, opacity]. Step-hold: value holds
+// until the next threshold is reached.
+type StepFrame = [number, number];
+
+const stepAt = (frames: StepFrame[], t: number): number => {
+  const c = Math.max(0, Math.min(1, t));
+  for (let i = frames.length - 1; i >= 0; i--) {
+    if (c >= frames[i][0]) return frames[i][1];
+  }
+  return frames[0][1];
+};
+
+// @keyframes flicker-in
+const FLICKER_IN: StepFrame[] = [
+  [0, 0], [0.01, 0.5], [0.20, 0.214], [0.40, 0.844], [0.60, 0.288], [0.80, 1],
+];
+
+// @keyframes flicker-text (per-character)
+const FLICKER_CHAR: StepFrame[] = [
+  [0, 0], [0.01, 0.5], [0.25, 1], [0.501, 0.5], [0.751, 1],
+];
+
+/** Element-level flicker-in:  t 0→1, opacity 0 ⇝ 1 */
+export const flickerIn = (t: number): number => stepAt(FLICKER_IN, t);
+/** Element-level flicker-out: t 0→1, opacity 1 ⇝ 0 */
+export const flickerOut = (t: number): number => stepAt(FLICKER_IN, 1 - t);
+
+/** Character-level flicker-in:  t 0→1, opacity 0 ⇝ 1 */
+export const flickerCharIn = (t: number): number => stepAt(FLICKER_CHAR, t);
+/** Character-level flicker-out: t 0→1, opacity 1 ⇝ 0 */
+export const flickerCharOut = (t: number): number => stepAt(FLICKER_CHAR, 1 - t);
+
+/** Split all text nodes inside `el` into per-character <span>s */
+export const splitTextToChars = (el: HTMLElement): HTMLSpanElement[] => {
+  const chars: HTMLSpanElement[] = [];
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  const textNodes: Text[] = [];
+  while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
+  textNodes.forEach(node => {
+    const trimmed = (node.textContent || '').trim();
+    if (!trimmed) { node.parentElement!.removeChild(node); return; }
+    const frag = document.createDocumentFragment();
+    [...trimmed].forEach(ch => {
+      const span = document.createElement('span');
+      span.style.display = 'inline-block';
+      span.textContent = ch === ' ' ? '\u00A0' : ch;
+      frag.appendChild(span);
+      chars.push(span);
+    });
+    node.parentElement!.replaceChild(frag, node);
+  });
+  return chars;
+};

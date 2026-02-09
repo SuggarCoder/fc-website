@@ -5,7 +5,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 export interface ScrollSystem {
   readonly progress: number;
-  setup: () => void;
+  setup: (triggerEl: HTMLElement) => void;
   dispose: () => void;
   resetToStart: () => void;
 }
@@ -17,22 +17,22 @@ export const createScrollSystem = (): ScrollSystem => {
   return {
     get progress() { return state.progress; },
 
-    setup: () => {
-      // Ensure page starts at top
+    setup: (triggerEl: HTMLElement) => {
       window.scrollTo(0, 0);
       state.progress = 0;
 
       trigger = ScrollTrigger.create({
-        start: 0,
-        end: 'max',
+        trigger: triggerEl,
+        pin: true,
+        start: 'top top',
+        end: '+=5000',
         scrub: 0.8,
         invalidateOnRefresh: true,
         onUpdate: (self) => {
           state.progress = self.progress;
-        }
+        },
       });
 
-      // Force refresh to ensure correct initial state
       ScrollTrigger.refresh();
     },
 
@@ -44,6 +44,6 @@ export const createScrollSystem = (): ScrollSystem => {
     resetToStart: () => {
       state.progress = 0;
       window.scrollTo(0, 0);
-    }
+    },
   };
 };

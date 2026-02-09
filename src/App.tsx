@@ -11,7 +11,7 @@ import { createComposer } from './postprocessing/createComposer';
 import { createMouseParallax } from './systems/createMouseParallax';
 import { createScrollSystem } from './systems/createScrollSystem';
 import { createCameraPath } from './systems/createCameraPath';
-import { mapRange } from './utils/helpers';
+import { mapRange, splitTextToChars } from './utils/helpers';
 
 const App: Component = () => {
   let containerRef: HTMLDivElement | undefined;
@@ -19,13 +19,136 @@ const App: Component = () => {
   let line2Ref: HTMLSpanElement | undefined;
   let arrowRef: HTMLDivElement | undefined;
   let maskRef: HTMLDivElement | undefined;
+  let getStartedRef: HTMLDivElement | undefined;
+  let mainRef: HTMLDivElement | undefined;
+  let drawerRef: HTMLDivElement | undefined;
+  let backdropRef: HTMLDivElement | undefined;
+  let panelRef: HTMLDivElement | undefined;
+  let drawer2Ref: HTMLDivElement | undefined;
+  let dividerRef: HTMLDivElement | undefined;
+  let pinRef: HTMLDivElement | undefined;
+  let heroRef: HTMLDivElement | undefined;
+  let descRef: HTMLDivElement | undefined;
+  let sec2Ref: HTMLDivElement | undefined;
+  let sec3Ref: HTMLDivElement | undefined;
   let getStartedTl: gsap.core.Timeline | undefined;
+  let drawer2Tl: gsap.core.Timeline | undefined;
 
   const [menuOpen, setMenuOpen] = createSignal(false);
+  const [activeIndex, setActiveIndex] = createSignal(-1);
+  const [arrowY, setArrowY] = createSignal(0);
   const isMobile = false;
 
+  const menuData = [
+    {
+      label: 'Proposition',
+      content: () => (
+        <ul class="flex flex-col gap-3 px-8 list-none">
+          <li class="text-white/60 text-base leading-relaxed text-xl">Instant Cross-Border Transfers</li>
+          <p class="text-white/40">Settle transactions in minutes not days.</p>
+          <li class="text-white/60 text-base leading-relaxed text-xl">Lower Transaction Costs</li>
+          <p class="text-white/40">Reduce fees compared to traditional correspondent banking networks.</p>
+          <li class="text-white/60 text-base leading-relaxed text-xl">Global Reach</li>
+          <p class="text-white/40">Move capital across countries and currencies without geographical limitations.</p>
+          <li class="text-white/60 text-base leading-relaxed text-xl">Institution-Grade Security</li>
+          <p class="text-white/40">Advanced custody, encryption, and risk controls.</p>
+        </ul>
+      ),
+    },
+    {
+      label: 'Products & Services',
+      content: () => (
+        <ul class="flex flex-col gap-3 px-8 list-none">
+          <li class="text-white/60 text-base leading-relaxed text-xl">Cross-Border Payments</li>
+          <p class="text-white/40">Send and receive funds globally using crypto rails while settling in local or digital currencies.</p>
+          <li class="text-white/60 text-base leading-relaxed text-xl">Treasury & Liquidity Management</li>
+          <p class="text-white/40">Optimize capital allocation, manage digital asset liquidity, and streamline treasury operations across regions.</p>
+          <li class="text-white/60 text-base leading-relaxed text-xl">On/Off-Ramp Solutions</li>
+          <p class="text-white/40">Seamlessly convert between fiat and digital assets with transparent pricing and fast settlement.</p>
+        </ul>
+      ),
+    },
+    {
+      label: 'How It Works',
+      content: () => (
+        <ul class="flex flex-col gap-3 px-8 list-none">
+          <li class="text-white/60 text-base leading-relaxed text-xl">Initiate Transfer</li>
+          <p class="text-white/40">Submit a payment or settlement request via API or dashboard.</p>
+          <li class="text-white/60 text-base leading-relaxed text-xl">Crypto Rail Settlement</li>
+          <p class="text-white/40">Funds are transferred using secure blockchain infrastructure.</p>
+          <li class="text-white/60 text-base leading-relaxed text-xl">Local Payout</li>
+          <p class="text-white/40">Receive funds in the desired currency or digital asset.</p>
+        </ul>
+      ),
+    },
+    {
+      label: 'Compliance',
+      content: () => (
+        <ul class="flex flex-col gap-3 px-8 list-none">
+          <li class="text-white/60 text-base leading-relaxed text-xl">Multi-layer custody and wallet security</li>
+          <li class="text-white/60 text-base leading-relaxed text-xl">Real-time transaction monitoring</li>
+          <li class="text-white/60 text-base leading-relaxed text-xl">Regulatory-aligned operations across jurisdictions</li>
+        </ul>
+      ),
+    },
+  ];
+
   let menuTl: gsap.core.Timeline | undefined;
+  let drawer2Open = false;
   const menuProxy = { t: 0 };
+  const arrowProxy = { y: 0 };
+
+  const showDrawer2 = (index: number, e: MouseEvent) => {
+    setActiveIndex(index);
+    if (!drawer2Ref || !panelRef || !dividerRef) return;
+
+    // Arrow follows hovered menu item
+    const target = e.currentTarget as HTMLElement;
+    const panelRect = panelRef.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const newY = targetRect.top - panelRect.top + targetRect.height / 2;
+
+    if (drawer2Open) {
+      gsap.to(arrowProxy, {
+        y: newY, duration: 0.25, ease: 'power2.out',
+        onUpdate: () => setArrowY(arrowProxy.y),
+      });
+      return;
+    }
+
+    drawer2Open = true;
+    arrowProxy.y = newY;
+    setArrowY(newY);
+
+    if (drawer2Tl) drawer2Tl.kill();
+
+    const panelWidth = panelRef.offsetWidth;
+    const targetWidth = panelWidth / 2;
+    gsap.set(drawer2Ref, {
+      visibility: 'visible',
+      left: panelWidth,
+      width: targetWidth,
+      clipPath: 'inset(0 100% 0 0)',
+    });
+
+    drawer2Tl = gsap.timeline();
+    drawer2Tl
+      .to(dividerRef, { opacity: 1, duration: 0.3 }, 0)
+      .to(drawer2Ref, { clipPath: 'inset(0 0% 0 0)', duration: 0.4, ease: 'power2.out' }, 0);
+  };
+
+  const hideDrawer2 = () => {
+    drawer2Open = false;
+    if (!drawer2Ref || !dividerRef) return;
+    if (drawer2Tl) drawer2Tl.kill();
+
+    drawer2Tl = gsap.timeline();
+    drawer2Tl
+      .to(drawer2Ref, { clipPath: 'inset(0 100% 0 0)', duration: 0.3, ease: 'power2.in' }, 0)
+      .to(dividerRef, { opacity: 0, duration: 0.3 }, 0)
+      .set(drawer2Ref, { visibility: 'hidden' });
+    setActiveIndex(-1);
+  };
 
   const toggleMenu = () => {
     const opening = !menuOpen();
@@ -55,56 +178,114 @@ const App: Component = () => {
       });
       // Phase 2: spread lines back to initial positions
   };
-     tl.to(menuProxy, {                                                                                                                        
-           t: opening ? 1 : 0,                                                                                                                     
-            duration: 0.75,                                                                                                                         
-            ease: 'power2.inOut',                                                                                                                   
-            onUpdate: updateOrbit,                                                                                                                  
-          });                                                                                                                                       
-        };
+    // Hamburger orbit
+    tl.to(menuProxy, {
+      t: opening ? 1 : 0,
+      duration: 0.75,
+      ease: 'power2.inOut',
+      onUpdate: updateOrbit,
+    });
+
+    // Drawer
+    if (drawerRef && mainRef && backdropRef && panelRef) {
+      if (opening) {
+        gsap.set(drawerRef, { visibility: 'visible' });
+        const navPadLeft = parseFloat(getComputedStyle(mainRef.parentElement!).paddingLeft);
+        gsap.set(panelRef, { width: mainRef.offsetWidth + navPadLeft *2, x: '-100%' });
+        gsap.set(backdropRef, { opacity: 0 });
+        tl.to(backdropRef, { opacity: 1, duration: 0.4, ease: 'power2.out' }, 0);
+        tl.to(panelRef, { x: '0%', duration: 0.5, ease: 'power2.out' }, 0.1);
+      } else {
+        // Reset drawer2
+        drawer2Open = false;
+        if (drawer2Ref) gsap.set(drawer2Ref, { visibility: 'hidden', clipPath: 'inset(0 100% 0 0)' });
+        if (dividerRef) gsap.set(dividerRef, { opacity: 0 });
+        setActiveIndex(-1);
+
+        tl.to(panelRef, { x: '-100%', duration: 0.5, ease: 'power2.inOut' }, 0);
+        tl.to(backdropRef, { opacity: 0, duration: 0.3, ease: 'power2.in' }, 0.2);
+        tl.set(drawerRef, { visibility: 'hidden' });
+      }
+    }
+  };
 
   onMount(() => {
-    if (!containerRef || !arrowRef ||!maskRef) return;
-    const button = maskRef.parentElement!;
+    if (!containerRef || !arrowRef || !maskRef || !getStartedRef) return;
+
+    // Collapse container to header-only height
+    const headerEl = getStartedRef.children[0] as HTMLElement;
+    gsap.set(getStartedRef, { height: headerEl.offsetHeight });
+
+    const maskParent = maskRef.parentElement!;
     let size = 0;
     getStartedTl = gsap.timeline({
       paused: true,
       onStart: () => {
-        size = arrowRef.clientHeight * 2;
+        size = arrowRef.clientHeight * 1.3;
       },
     });
 
     getStartedTl
-      .to(
-        arrowRef,
-        {
-          rotate: 180,
-          transformOrigin: '50% 50%',
-          duration: 0.25,
-          ease: 'power2.out',
-        },
-        0
-      )
-   .to(
-    maskRef,
-    {
-      width: () => size,
-      height: () => size,
-      x: () => button.clientWidth - size,
-      y: () => button.clientHeight - size,
-      borderRadius: '0.375rem', // rounded-md
-      duration: 0.35,
-      ease: 'power2.inOut',
-    },
-    0
-  );
+      .to(arrowRef, {
+        rotate: 180,
+        transformOrigin: '50% 50%',
+        duration: 0.25,
+        ease: 'power2.out',
+      }, 0)
+      .to(maskRef, {
+        width: () => size,
+        height: () => size,
+        x: () => maskParent.clientWidth - size,
+        y: () => maskParent.clientHeight - size,
+        borderRadius: '0.375rem',
+        duration: 0.35,
+        ease: 'power2.inOut',
+      }, 0)
+      .to(getStartedRef, {
+        height: 'auto',
+        duration: 0.35,
+        ease: 'power2.inOut',
+      }, 0);
 
-    const onEnter = () => getStartedTl!.play();
-    const onLeave = () => getStartedTl!.reverse();
+    // Split text into per-character spans for random letter fade
+    const heroChars = heroRef ? splitTextToChars(heroRef.querySelector('h1')!) : [];
+    const descP = descRef?.querySelector('p');
+    const descChars = descP ? splitTextToChars(descP) : [];
 
-    arrowRef.addEventListener('mouseenter', onEnter);
-    arrowRef.addEventListener('mouseleave', onLeave);
-    
+    // Build random-letter fade timelines (scrubbed by scroll)
+    // Uses `amount` instead of `each` so stagger ratio is consistent regardless of char count
+    const buildFadeOutTl = (chars: HTMLSpanElement[]): gsap.core.Timeline => {
+      const tl = gsap.timeline({ paused: true });
+      if (chars.length === 0) return tl;
+      tl.to(chars, { opacity: 0, duration: 0.3, stagger: { amount: 0.7, from: 'random' }, ease: 'power2.in' });
+      return tl;
+    };
+    const buildFadeInTl = (chars: HTMLSpanElement[]): gsap.core.Timeline => {
+      const tl = gsap.timeline({ paused: true });
+      if (chars.length === 0) return tl;
+      gsap.set(chars, { opacity: 0 });
+      tl.to(chars, { opacity: 1, duration: 0.3, stagger: { amount: 0.7, from: 'random' }, ease: 'power2.out' });
+      return tl;
+    };
+
+    // Hero & desc — fade out
+    const heroFadeTl = buildFadeOutTl(heroChars);
+    const descFadeTl = buildFadeOutTl(descChars);
+
+    // Section 2 — fade in + fade out
+    const sec2Chars: HTMLSpanElement[] = [];
+    sec2Ref?.querySelectorAll('p').forEach(p => sec2Chars.push(...splitTextToChars(p as HTMLElement)));
+    const sec2FadeInTl = buildFadeInTl(sec2Chars);
+    const sec2FadeOutTl = buildFadeOutTl(sec2Chars);
+    const sec2Line = sec2Ref?.querySelector('[data-sec2-line]') as HTMLElement | null;
+    if (sec2Ref) gsap.set(sec2Ref, { opacity: 0 });
+    if (sec2Line) gsap.set(sec2Line, { opacity: 0 });
+
+    // Section 3 — fade in
+    const sec3Chars: HTMLSpanElement[] = [];
+    sec3Ref?.querySelectorAll('p').forEach(p => sec3Chars.push(...splitTextToChars(p as HTMLElement)));
+    const sec3FadeInTl = buildFadeInTl(sec3Chars);
+    if (sec3Ref) gsap.set(sec3Ref, { opacity: 0 });
 
     // Initialize scene
     const scene = createScene(BG_COLOR);
@@ -119,7 +300,7 @@ const App: Component = () => {
 
     // Setup systems
     mouseParallax.setup();
-    scrollSystem.setup();
+    scrollSystem.setup(pinRef!);
 
     // Initialize camera position using preloader path
     const initPos = cameraPath.getInitialPosition();
@@ -199,6 +380,34 @@ const App: Component = () => {
         (mesh.material as THREE.MeshBasicMaterial).opacity = alpha;
       });
 
+      // ── Scroll-driven section transitions ──
+      // 0→0.08: hero & desc fade out
+      const flickerT = mapRange(progress, 0, 0.08, 0, 1, true);
+      heroFadeTl.progress(flickerT);
+      descFadeTl.progress(flickerT);
+      if (descRef) descRef.style.opacity = String(1 - flickerT);
+
+      // 0.10→0.18: sec2 letters fade in + container fade in
+      const sec2InT = mapRange(progress, 0.10, 0.18, 0, 1, true);
+      // 0.18→0.20: sec2 hold, 0.20→0.26: sec2 letters fade out + container fade out
+      const sec2OutT = mapRange(progress, 0.20, 0.26, 0, 1, true);
+      sec2FadeInTl.progress(sec2InT);
+      sec2FadeOutTl.progress(sec2OutT);
+      if (sec2Ref) {
+        const sec2Visible = sec2InT > 0 && sec2OutT < 1;
+        sec2Ref.style.opacity = sec2Visible ? '1' : '0';
+      }
+      if (sec2Line) {
+        const lineAlpha = sec2OutT > 0 ? 1 - sec2OutT : sec2InT;
+        sec2Line.style.opacity = String(lineAlpha);
+      }
+
+      // 0.24→0.28: gap
+      // 0.28→0.32: sec3 letters fade in (container visibility toggles)
+      const sec3InT = mapRange(progress, 0.28, 0.32, 0, 1, true);
+      sec3FadeInTl.progress(sec3InT);
+      if (sec3Ref) sec3Ref.style.opacity = sec3InT > 0 ? '1' : '0';
+
       floorMaterial.update();
 
       post.composer.render(dt);
@@ -207,8 +416,6 @@ const App: Component = () => {
 
     // Cleanup
     onCleanup(() => {
-      arrowRef.removeEventListener('mouseenter', onEnter);
-      arrowRef.removeEventListener('mouseleave', onLeave);
       getStartedTl?.kill();
       gsap.ticker.remove(animate);
       window.removeEventListener('resize', handleResize);
@@ -224,61 +431,123 @@ const App: Component = () => {
   return (
     <>
       <div ref={containerRef} class="fixed inset-0 w-full h-full" />
-        <div class="absolute inset-0 flex flex-col items-between justify-between overflow-hidden">
-            <nav class="relative flex flex-col lg:flex-row items-start justify-between px-4 py-3 md:px-4 md:py-4">
-              <div class="flex flex-row gap-4">
-                <div class="flex flex-row">
-                  {/* Logo */}
-                  <div class="flex items-center gap-2 rounded-l-md px-4 bg-[#1a1e3a]/30">
-                    <img src="/logo.svg" alt="Logo" class="lg:w-20 lg:h-20" />
-                    <p class="text-white lg:text-xl font-700">FLOW CAPITAL</p>
-                  </div>
-                  {/* Hamburger */}
-                  <button
-                    class="relative w-20 h-20 rounded-r-md border-white bg-[#6f738a]/40 border-0 cursor-pointer"
-                    onClick={toggleMenu}
-                  >
-                    <span ref={line1Ref} class="absolute left-1/2 top-1/2 -ml-4 block w-8 h-px bg-white" style={{ transform: 'translateY(-4px)' }} />
-                    <span ref={line2Ref} class="absolute left-1/2 top-1/2 -ml-4 block w-8 h-px bg-white" style={{ transform: 'translateY(4px)' }} />
-                  </button>
+      <div ref={pinRef} class="relative w-full h-screen">
+          <div ref={sec2Ref} class="absolute inset-0 flex justify-end px-4 md:px-8" style={{ opacity: 0 }}>
+            <div class="w-1/3 flex flex-col gap-6 h-screen justify-center">
+              <p class="text-xs font-light text-white leading-tight">
+                Redefining Cross-Border Finance
+              </p>
+              <div data-sec2-line class="w-full h-2 border border-solid border-b-0 border-white/50"></div>
+              <p class="text-gray-300 text-sm md:text-base lg:text-lg leading-relaxed">
+                The global financial landscape is undergoing a fundamental transformation. Traditional correspondent banking networks, built decades ago, remain slow, opaque, and expensive. Settlement windows stretch across days, intermediary fees compound at every hop, and compliance requirements fragment across jurisdictions. For businesses operating internationally, these inefficiencies translate directly into lost revenue and constrained growth.
+              </p>
+            </div>
+          </div>
+          {/* section3 */}
+          <div ref={sec3Ref} class="absolute inset-0 flex justify-start px-4 md:px-8" style={{ opacity: 0 }}>
+            <div class="w-1/2 flex flex-col gap-6 h-screen justify-center">
+              <p class="text-9xl font-light text-white leading-tight">
+                Our Services
+              </p>
+            </div>
+          </div>
+        {/* Drawer */}
+        <div ref={drawerRef} class="absolute inset-0 z-40 invisible">
+          <div ref={backdropRef} class="absolute inset-0 bg-[#0d1033]/80" />
+          <div ref={panelRef} class="absolute left-0 top-0 h-full bg-[#0d1033]/95 backdrop-blur-md overflow-y-auto flex items-center" style={{ transform: 'translateX(-100%)' }}>
+            <nav class="flex flex-col gap-2 px-6" onMouseLeave={hideDrawer2}>
+              {menuData.map((item, i) => (
+                <a class="text-6xl text-white/70 hover:text-white transition-colors cursor-pointer py-2 flex items-center gap-2"
+                  onMouseEnter={(e) => showDrawer2(i, e)}
+                >{item.label} <span class="i-mdi-light-chevron-right text-2xl" /></a>
+              ))}
+            </nav>
+            {/* Divider: line + angular arrow */}
+            <div ref={dividerRef} class="absolute right-0 top-0 h-full opacity-0 pointer-events-none" style={{ width: '12px' }}>
+              {/* Top line */}
+              <div class="absolute right-px top-0 w-px bg-white/20" style={{ height: `${Math.max(0, arrowY() - 12)}px` }} />
+              {/* Angular left-pointing arrow */}
+              <svg class="absolute right-0" width="12" height="24" viewBox="0 0 12 24" fill="none"
+                style={{ top: `${arrowY() - 12}px` }}>
+                <path d="M11 0 L1 12 L11 24" stroke="#fff" stroke-opacity="0.3" stroke-width="1" stroke-linejoin="miter" />
+              </svg>
+              {/* Bottom line */}
+              <div class="absolute right-px w-px bg-white/20" style={{ top: `${arrowY() + 12}px`, bottom: '0' }} />
+            </div>
+          </div>
+          {/* Drawer2 — 描述面板，clip-path 从左向右延伸 */}
+          <div ref={drawer2Ref} class="absolute top-0 h-full bg-[#0d1033]/90 backdrop-blur-md flex items-center justify-center invisible">
+            {activeIndex() >= 0 && menuData[activeIndex()].content()}
+          </div>
+        </div>
+        <div class="absolute inset-0 flex flex-col justify-between overflow-hidden">
+          <nav class="relative flex flex-col lg:flex-row items-start justify-between px-4 py-3 md:px-4 md:py-4">
+            <div id="main" ref={mainRef} class="flex flex-row gap-4 items-start relative z-50">
+              <div class="flex flex-row">
+                {/* Logo */}
+                <div class="flex items-center gap-2 rounded-l-md px-4 bg-[#1a1e3a]/30">
+                  <img src="/logo.svg" alt="Logo" class="lg:w-20 lg:h-20" />
+                  <p class="text-white lg:text-xl font-700">FLOW CAPITAL</p>
                 </div>
-                {/* Get Started */}
-                <div class="relative bg-orange-500 transition-colors text-white px-4 lg:w-60 rounded-md flex items-center gap-1 overflow-hidden">
+                {/* Hamburger */}
+                <button
+                  class="relative w-20 h-20 rounded-r-md border-white bg-[#6f738a]/40 border-0 cursor-pointer"
+                  onClick={toggleMenu}
+                >
+                  <span ref={line1Ref} class="absolute left-1/2 top-1/2 -ml-4 block w-8 h-px bg-white" style={{ transform: 'translateY(-4px)' }} />
+                  <span ref={line2Ref} class="absolute left-1/2 top-1/2 -ml-4 block w-8 h-px bg-white" style={{ transform: 'translateY(4px)' }} />
+                </button>
+              </div>
+              {/* Get Started */}
+              <div
+                ref={getStartedRef}
+                class="relative bg-orange-500 text-white lg:w-80 rounded-md overflow-hidden cursor-pointer"
+                onMouseEnter={() => getStartedTl?.play()}
+                onMouseLeave={() => getStartedTl?.reverse()}
+              >
+                {/* Header — 固定高度，蒙版和箭头锚定在此 */}
+                <div class="relative flex items-center gap-1 px-4 h-20">
                   <p class="font-700">Get Started</p>
-                    {/* 白色蒙版 */}
+                  {/* 白色蒙版 */}
                   <div
                     ref={maskRef}
-                    class="absolute left-0 top-0 h-full bg-white/30 backdrop-blur-sm z-5"
-                    style={{ width: '100%', height: '100%' }}/>
-                    {/* 箭头（hover 触发源） */}
-                    <div
-                      ref={arrowRef}
-                      class="i-mdi-light-chevron-down text-3xl absolute bottom-1 right-1 z-20 cursor-pointer"
-                    />
-                </div>                
-              </div>
-              <div class="lg:text-right lg:flex-1">
-                <h1 class="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-light leading-[0.95] tracking-tight">
-                  <span class="text-orange-500">Motion</span>
-                  <br />
-                  <span class="text-white">Without</span>
-                  <br />
-                  <span class="text-white">Borders</span>
-                </h1>
-              </div>                
-            </nav>
-            <div class="relative flex flex-col lg:flex-row items-start justify-between px-4 md:px-4 mt-8 md:mt-16 lg:mt-24 gap-8 lg:gap-0">
-              <div class="lg:self-end lg:mb-8 max-w-lg">
-                <div class="bg-[#1a1e3a]/80 backdrop-blur-sm rounded-lg p-6 md:p-8">
-                  <p class="text-gray-300 text-sm md:text-base leading-relaxed">
-                  By combining blockchain infrastructure, compliant custody, and real-time settlement, Flow Capital enables seamless international transfers, treasury operations, and digital asset liquidity management for the modern global economy.
-                  </p>
-                  <button class="bg-gray mt-6 w-10 h-10 flex items-center justify-center border border-gray-500 rounded-md text-gray-400 hover:text-white hover:border-white transition-colors">
-                    <span class="i-carbon-chevron-down text-lg" />
-                  </button>
+                    class="absolute left-0 top-0 w-full h-full bg-white/30 backdrop-blur-sm z-5"
+                  />
+                  {/* 箭头 */}
+                  <div
+                    ref={arrowRef}
+                    class="i-mdi-light-chevron-down text-3xl absolute bottom-1 right-1 z-20 cursor-pointer"
+                  />
                 </div>
+                {/* 展开菜单 */}
+                <div class="px-4">
+                  <a class="block py-2 text-white/70 lg:text-xl hover:text-white transition-colors cursor-pointer">Initiate Your Settlement</a>
+                  <div class="mx-1 h-px bg-white/30" />
+                  <a class="block py-2 text-white/70 lg:text-xl hover:text-white transition-colors cursor-pointer">Contact</a>
+                </div>
+              </div>                
+            </div>
+            <div ref={heroRef} class="lg:text-right lg:flex-1">
+              <h1 class="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-light leading-[0.95] tracking-tight">
+                <span class="text-orange-500">Capital</span>
+                <br />
+                <span class="text-white">Without</span>
+                <br />
+                <span class="text-white">Borders</span>
+              </h1>
+            </div>                
+          </nav>
+          <div ref={descRef} class="relative px-4 md:px-4 mt-8 md:mt-16 lg:mt-24 gap-8 lg:gap-0">
+            <div class="bg-[#1a1e3a]/80 backdrop-blur-sm rounded-lg max-w-2xl flex flex-col justify-between mb-8 p-4 h-[30vh]">
+              <p class="text-gray-300 text-sm md:text-base lg:text-xl leading-relaxed">
+                  By combining blockchain infrastructure, compliant custody, and real-time settlement, Flow Capital enables seamless international transfers, treasury operations, and digital asset liquidity management for the modern global economy.
+              </p>
+              <div data-flicker-btn class="bg-white/10 mt-6 w-10 h-10 flex items-center justify-center rounded-md text-gray hover:text-white transition-colors self-end cursor-pointer">
+                <span class="i-mdi-light-chevron-down text-2xl" />
               </div>
             </div>
+          </div>
+        </div>
       </div>
     </>
   );
