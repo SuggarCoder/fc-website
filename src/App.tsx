@@ -126,6 +126,7 @@ const App: Component = () => {
   let blackOverlayRef: HTMLDivElement | undefined;
   let getStartedTl: gsap.core.Timeline | undefined;
   let drawer2Tl: gsap.core.Timeline | undefined;
+  let scrollSystem: ReturnType<typeof createScrollSystem> | undefined;
 
   const [menuOpen, setMenuOpen] = createSignal(false);
   const [activeIndex, setActiveIndex] = createSignal(-1);
@@ -204,6 +205,10 @@ const App: Component = () => {
   const toggleMenu = () => {
     const opening = !menuOpen();
     setMenuOpen(opening);
+
+    // 菜单打开时禁用滚动，关闭时恢复
+    if (opening) scrollSystem?.stop();
+    else scrollSystem?.start();
 
     if (menuTl) menuTl.kill();
 
@@ -582,7 +587,7 @@ const App: Component = () => {
 
     // Initialize systems
     const mouseParallax = createMouseParallax(window.innerWidth, window.innerHeight);
-    const scrollSystem = createScrollSystem();
+    scrollSystem = createScrollSystem();
     const cameraPath = createCameraPath();
 
     // Setup systems
