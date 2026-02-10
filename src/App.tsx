@@ -14,6 +14,8 @@ import { createScrollSystem } from './systems/createScrollSystem';
 import { createCameraPath } from './systems/createCameraPath';
 import { mapRange } from './utils/helpers';
 import SplitText from './components/SplitText';
+import Form from './components/Form';
+import GooeyText from './components/GooeyText';
 
 const menuData = [
   {
@@ -725,8 +727,21 @@ const App: Component = () => {
     <>
       <div ref={containerRef} class="fixed inset-0 w-full h-full" />
       <div ref={pinRef} class="relative w-full h-screen">
-          <div ref={whiteOverlayRef} class="absolute inset-0 bg-white z-40" style={{ transform: 'translateY(100%)' }} />
-          <div ref={blackOverlayRef} class="absolute inset-0 bg-black z-41" style={{ transform: 'translateY(100%)' }} />
+          <div ref={whiteOverlayRef} class="absolute inset-0 bg-white z-40" style={{ transform: 'translateY(100%)' }} >
+            <div class="flex flex-col p-8 lg:p-20 gap-12">
+              <h1 class="text-9xl">Request <br />A Connect</h1>
+              <div></div>
+              <div class="flex flex-col md:flex-row gap-12 justify-between">
+                <div class="text-3xl">For other inquiries, please contact us at <br /> infor@floatcapital.com</div>
+                <div class="flex flex-row">
+                  <Form/>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div ref={blackOverlayRef} class="absolute inset-0 z-41 bg-[linear-gradient(to_top,#213f6d,#2a4198)]" style={{ transform: 'translateY(100%)' }}>
+            <GooeyText/>
+          </div>
           <div ref={sec2Ref} class="absolute inset-0 flex justify-end px-4 md:px-8" style={{ opacity: 0 }}>
             <div class="w-1/3 flex flex-col gap-6 h-screen justify-center">
               <p class="text-xs font-light text-white leading-tight">
@@ -904,7 +919,7 @@ const App: Component = () => {
               <p class="text-gray-300 text-sm md:text-base lg:text-xl leading-relaxed">
                 <SplitText text="By combining blockchain infrastructure, compliant custody, and real-time settlement, Flow Capital enables seamless international transfers, treasury operations, and digital asset liquidity management for the modern global economy." chars={descChars} />
               </p>
-              <div data-flicker-btn class="bg-white/10 mt-6 w-10 h-10 flex items-center justify-center rounded-md text-gray hover:text-white transition-colors self-end cursor-pointer">
+              <div data-flicker-btn class="bg-white/10 mt-6 w-10 h-10 flex items-center justify-center rounded-md text-gray hover:text-white transition-colors self-end cursor-pointer" onClick={() => scrollSystem?.scrollToProgress(0.144)}>
                 <span class="i-mdi-light-chevron-down text-2xl" />
               </div>
             </div>
