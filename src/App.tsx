@@ -154,7 +154,7 @@ const App: Component = () => {
 
   const showDrawer2 = (index: number, e: MouseEvent) => {
     setActiveIndex(index);
-    if (!drawer2Ref || !panelRef || !dividerRef) return;
+    if (isMobile() || !drawer2Ref || !panelRef || !dividerRef) return;
 
     // Arrow follows hovered menu item
     const target = e.currentTarget as HTMLElement;
@@ -733,7 +733,7 @@ const App: Component = () => {
       <div ref={containerRef} class="fixed inset-0 w-full h-full" />
       <div ref={pinRef} class="relative w-full h-screen">
           <div ref={whiteOverlayRef} class="absolute inset-0 bg-white z-40" style={{ transform: 'translateY(100%)' }} >
-            <div class="flex flex-col p-4 sm:p-6 md:p-8 lg:p-20 gap-8 md:gap-12">
+            <div class="flex flex-col p-4 pt-16 sm:p-6 sm:pt-16 md:p-8 lg:p-20 lg:pt-20 gap-8 md:gap-12">
               <h1 class="text-4xl sm:text-5xl md:text-7xl lg:text-9xl">Request <br />A Connect</h1>
               <div></div>
               <div class="flex flex-col md:flex-row gap-12 justify-between">
@@ -775,7 +775,7 @@ const App: Component = () => {
           </div>
           {/* section4 — fully triggered animations */}
           <div ref={sec4Ref} class="absolute inset-0 flex justify-end">
-            <div class="w-full md:w-[50%] lg:w-[40%] flex flex-col gap-6 h-screen justify-between bg-[#1a1e3a]/80 p-4">
+            <div class="w-full md:w-[50%] lg:w-[40%] flex flex-col gap-6 h-screen justify-between bg-[#1a1e3a]/80 p-4 pt-16 lg:pt-4">
               <div class="relative">
                 {sec4Data.map((item, i) => (
                   <h1
@@ -810,7 +810,7 @@ const App: Component = () => {
           </div>
           {/* section6 — triggered animations */}
           <div ref={sec6Ref} class="absolute inset-0 flex justify-end">
-            <div class="w-full md:w-[50%] lg:w-[40%] flex flex-col gap-6 h-screen justify-between bg-[#1a1e3a]/80 p-4">
+            <div class="w-full md:w-[50%] lg:w-[40%] flex flex-col gap-6 h-screen justify-between bg-[#1a1e3a]/80 p-4 pt-16 lg:pt-4">
               <div class="relative">
                 {sec6Data.map((item, i) => (
                   <h1
@@ -869,7 +869,7 @@ const App: Component = () => {
           </div>
         </div>
         <div class="absolute inset-0 flex flex-col justify-between overflow-hidden">
-          <nav class="relative flex flex-col lg:flex-row items-start justify-between px-4 py-3 md:px-4 md:py-4">
+          <nav class="relative flex flex-col lg:flex-row items-stretch lg:items-start justify-between px-4 py-3 md:px-4 md:py-4 h-full lg:h-auto">
             <div id="main" ref={mainRef} class="flex flex-row gap-4 items-start relative z-50">
 
               <div class="flex flex-row">
@@ -883,8 +883,8 @@ const App: Component = () => {
                   class="relative w-10 h-10 md:w-14 md:h-14 lg:w-20 lg:h-20 rounded-r-md border-white bg-[#6f738a]/40 border-0 cursor-pointer"
                   onClick={toggleMenu}
                 >
-                  <span ref={line1Ref} class="absolute left-1/2 top-1/2 -ml-4 block w-8 h-px bg-white" style={{ transform: 'translateY(-4px)' }} />
-                  <span ref={line2Ref} class="absolute left-1/2 top-1/2 -ml-4 block w-8 h-px bg-white" style={{ transform: 'translateY(4px)' }} />
+                  <span ref={line1Ref} class="absolute left-1/2 top-1/2 block w-4 lg:w-8 h-px bg-white" style={{ transform: 'translate(-50%, -4px)' }} />
+                  <span ref={line2Ref} class="absolute left-1/2 top-1/2 block w-4 lg:w-8 h-px bg-white" style={{ transform: 'translate(-50%, 4px)' }} />
                 </button>
               </div>
               {/* Get Started */}
@@ -916,8 +916,8 @@ const App: Component = () => {
                 </div>
               </div>
             </div>
-            <div ref={heroRef} class="lg:text-right lg:flex-1">
-              <h1 class="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-light leading-[0.95] tracking-tight">
+            <div ref={heroRef} class="flex-1 flex items-center justify-center lg:justify-end lg:text-right sm:w-full">
+              <h1 class="text-7xl sm:text-8xl md:text-8xl lg:text-8xl xl:text-9xl font-light leading-[0.95] tracking-tight text-center lg:text-right">
                 <SplitText text="Capital" class="text-orange-500" chars={heroChars} />
                 <br />
                 <SplitText text="Without" class="text-white" chars={heroChars} />
