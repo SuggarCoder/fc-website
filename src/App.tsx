@@ -745,7 +745,7 @@ const App: Component = () => {
             </div>
           </div>
           <div ref={blackOverlayRef} class="absolute inset-0 z-41 bg-[linear-gradient(to_top,#213f6d,#2a4198)] flex flex-col" style={{ transform: 'translateY(100%)' }}>
-            <GooeyText/>
+            {/* <GooeyText/> */}
             <div class="absolute bottom-6 left-0 w-full flex flex-col items-center gap-2 sm:flex-row sm:justify-between px-4 sm:px-8 text-white/40 text-xs">
               <span>&copy; Float Capital 2026</span>
               <span class="flex items-center gap-1">
