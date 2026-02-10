@@ -39,6 +39,8 @@ interface Viewport {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
+const hasHover = typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches
+
 const TEXT_LINE1 = 'FLOAT'
 const TEXT_LINE2 = 'CAPITAL'
 const FONT_FAMILY = "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif"
@@ -47,8 +49,9 @@ const PARTICLE_DECAY = 0.85
 const PARTICLE_VEL_DECAY = 0.95
 const SMOOTH_FACTOR = 0.1
 const MIN_PARTICLE_SIZE = 1
-const MAX_PARTICLES = 150
-const MAX_PARTICLE_AGE = 120 // hard kill after 120 frames (~2s at 60fps)
+const MAX_PARTICLE_SIZE = 200
+const MAX_PARTICLES = hasHover ? 150 : 60
+const MAX_PARTICLE_AGE = 80
 
 // ─── Pure Functions ──────────────────────────────────────────────────────────
 
@@ -68,10 +71,15 @@ const createInitialMouse = (): MouseState => ({
   diff: 0,
 })
 
-const createInitialHead = (): HeadState => ({
-  pos: vec2(0, 0),
-  vel: vec2(0, 0),
-})
+const createInitialHead = (vp: Viewport): HeadState => {
+  // Match stepHead(time=0) to avoid first-frame velocity spike
+  const cx = hasHover ? 0.5 : 0.55
+  const rx = hasHover ? 0.375 : 0.35
+  const ry = hasHover ? 0.05 : 0.15
+  const x = vp.width * cx + vp.width * rx  // cos(0) = 1
+  const y = vp.height * 0.5 + vp.width * ry // cos(0) = 1
+  return { pos: vec2(x, y), vel: vec2(0, 0) }
+}
 
 const updateMouseOnMove = (prev: MouseState, newPos: Vec2): MouseState => ({
   ...prev,
@@ -86,8 +94,6 @@ const stepMouse = (m: MouseState): MouseState => {
   const diff = magVec(vec2(m.pos.x - smooth.x, m.pos.y - smooth.y))
   return { pos: m.pos, smooth, vel, smoothVel, diff }
 }
-
-const hasHover = typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches
 
 const stepHead = (prev: HeadState, vp: Viewport, time: number): HeadState => {
   // 手机模式：更丰富的自动轨迹（8字形 + 多频叠加）
@@ -140,7 +146,7 @@ const stepParticle = (p: ParticleState, time: number): ParticleState => {
   )
   const pos = addVec(addVec(p.pos, wave), p.vel)
   const vel = scaleVec(p.vel, PARTICLE_VEL_DECAY)
-  const size = (p.size + magVec(p.vel)) * PARTICLE_DECAY
+  const size = Math.min((p.size + magVec(p.vel)) * PARTICLE_DECAY, MAX_PARTICLE_SIZE)
   const age = p.age + 1
 
   p.el.setAttribute('cx', String(pos.x))
@@ -217,7 +223,7 @@ export default function GooeyText() {
 
   // mutable state managed via signals for the animation loop
   let mouseState = createInitialMouse()
-  let headState = createInitialHead()
+  let headState: HeadState = { pos: vec2(0, 0), vel: vec2(0, 0) }
   let particles: ParticleState[] = []
   let particleCnt = 0
   let rafId = 0
@@ -275,6 +281,7 @@ export default function GooeyText() {
 
   onMount(() => {
     handleResize()
+    headState = createInitialHead(viewport())
     if (hasHover) {
       window.addEventListener('mousemove', handleMouseMove)
     }
