@@ -739,8 +739,15 @@ const App: Component = () => {
               </div>
             </div>
           </div>
-          <div ref={blackOverlayRef} class="absolute inset-0 z-41 bg-[linear-gradient(to_top,#213f6d,#2a4198)]" style={{ transform: 'translateY(100%)' }}>
+          <div ref={blackOverlayRef} class="absolute inset-0 z-41 bg-[linear-gradient(to_top,#213f6d,#2a4198)] flex flex-col" style={{ transform: 'translateY(100%)' }}>
             <GooeyText/>
+            <div class="absolute bottom-6 left-0 w-full flex items-center justify-between px-8 text-white/40 text-xs">
+              <span>&copy; Float Capital 2026</span>
+              <span class="flex items-center gap-1">
+                <div class="i-mdi-light-map-marker text-sm" />
+                六本木ヒルズ ノースタワー
+              </span>
+            </div>
           </div>
           <div ref={sec2Ref} class="absolute inset-0 flex justify-end px-4 md:px-8" style={{ opacity: 0 }}>
             <div class="w-1/3 flex flex-col gap-6 h-screen justify-center">
@@ -824,7 +831,7 @@ const App: Component = () => {
             </div>
           </div>
         {/* Drawer */}
-        <div ref={drawerRef} class="absolute inset-0 z-40 invisible">
+        <div ref={drawerRef} class="absolute inset-0 z-50 invisible">
           <div ref={backdropRef} class="absolute inset-0 bg-[#0d1033]/80" />
           <div ref={panelRef} class="absolute left-0 top-0 h-full bg-[#0d1033]/95 backdrop-blur-md overflow-y-auto flex items-center" style={{ transform: 'translateX(-100%)' }}>
             <nav class="flex flex-col gap-2 px-6" onMouseLeave={hideDrawer2}>
