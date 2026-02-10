@@ -96,7 +96,7 @@ const Form: Component = () => {
                   {/* Searchable Dropdown Menu */}
                   <Show when={showList()}>
                     <div ref={menuRef} onWheel={handleWheel}
-                         class="absolute top-[calc(100%+8px)] left-0 z-50 w-72 md:w-80 bg-white rounded-lg overflow-hidden"
+                         class="absolute top-[calc(100%+8px)] left-0 z-50 w-[calc(100vw-3rem)] sm:w-72 md:w-80 bg-white rounded-lg overflow-hidden"
                          style="box-shadow: 0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.08);">
                       {/* Search Bar */}
                       <div class="px-4 py-3" onClick={(e) => e.stopPropagation()}>

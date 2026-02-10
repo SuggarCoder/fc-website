@@ -135,7 +135,7 @@ const App: Component = () => {
   const [arrowY, setArrowY] = createSignal(0);
   const [drawer2Open, setDrawer2Open] = createSignal(false);
   const [pathReady, setPathReady] = createSignal(false);
-  const isMobile = false;
+  const [isMobile, setIsMobile] = createSignal(window.innerWidth < 768);
 
   // Char refs collected from SplitText components
   const heroChars: HTMLSpanElement[] = [];
@@ -589,7 +589,8 @@ const App: Component = () => {
     // Initialize scene
     const scene = createScene(BG_COLOR);
     const renderer = createRenderer(containerRef, { bgColor: BG_COLOR });
-    const camera = createCamera(window.innerWidth / window.innerHeight, CameraConfig);
+    const initFov = window.innerWidth < 640 ? 65 : window.innerWidth < 1024 ? 50 : 35;
+    const camera = createCamera(window.innerWidth / window.innerHeight, { ...CameraConfig, fov: initFov });
     const controls = createCameraControls(camera, renderer.domElement);
 
     // Initialize systems
@@ -620,13 +621,13 @@ const App: Component = () => {
 
     // Create scene objects
     const { mesh: gradient, material: gradientMaterial } = createGradientPlane();
-    const { mesh: floor, material: floorMaterial } = createFloor(renderer, camera, scene, isMobile, BG_COLOR, gradient);
+    const { mesh: floor, material: floorMaterial } = createFloor(renderer, camera, scene, isMobile(), BG_COLOR, gradient);
     scene.add(floor, gradient);
 
     // Load lines
     const lineMaterials: THREE.ShaderMaterial[] = [];
     let circleLines: THREE.Mesh[] = [];
-    loadLines('./scene.obj', isMobile).then(({ container, materials, circleLines: circles }) => {
+    loadLines('./scene.obj', isMobile()).then(({ container, materials, circleLines: circles }) => {
       scene.add(container);
       lineMaterials.push(...materials);
       circleLines = circles;
@@ -641,6 +642,10 @@ const App: Component = () => {
       const height = window.innerHeight;
       const pr = renderer.getPixelRatio();
 
+      setIsMobile(width < 768);
+
+      // Responsive FOV: mobile 65°, tablet 50°, desktop 35°
+      camera.fov = width < 640 ? 65 : width < 1024 ? 50 : 35;
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
@@ -728,11 +733,11 @@ const App: Component = () => {
       <div ref={containerRef} class="fixed inset-0 w-full h-full" />
       <div ref={pinRef} class="relative w-full h-screen">
           <div ref={whiteOverlayRef} class="absolute inset-0 bg-white z-40" style={{ transform: 'translateY(100%)' }} >
-            <div class="flex flex-col p-8 lg:p-20 gap-12">
-              <h1 class="text-9xl">Request <br />A Connect</h1>
+            <div class="flex flex-col p-4 sm:p-6 md:p-8 lg:p-20 gap-8 md:gap-12">
+              <h1 class="text-4xl sm:text-5xl md:text-7xl lg:text-9xl">Request <br />A Connect</h1>
               <div></div>
               <div class="flex flex-col md:flex-row gap-12 justify-between">
-                <div class="text-3xl">For other inquiries, please contact us at <br /> infor@floatcapital.com</div>
+                <div class="text-lg md:text-2xl lg:text-3xl">For other inquiries, please contact us at <br /> infor@floatcapital.com</div>
                 <div class="flex flex-row">
                   <Form/>
                 </div>
@@ -741,7 +746,7 @@ const App: Component = () => {
           </div>
           <div ref={blackOverlayRef} class="absolute inset-0 z-41 bg-[linear-gradient(to_top,#213f6d,#2a4198)] flex flex-col" style={{ transform: 'translateY(100%)' }}>
             <GooeyText/>
-            <div class="absolute bottom-6 left-0 w-full flex items-center justify-between px-8 text-white/40 text-xs">
+            <div class="absolute bottom-6 left-0 w-full flex flex-col items-center gap-2 sm:flex-row sm:justify-between px-4 sm:px-8 text-white/40 text-xs">
               <span>&copy; Float Capital 2026</span>
               <span class="flex items-center gap-1">
                 <div class="i-mdi-light-map-marker text-sm" />
@@ -750,7 +755,7 @@ const App: Component = () => {
             </div>
           </div>
           <div ref={sec2Ref} class="absolute inset-0 flex justify-end px-4 md:px-8" style={{ opacity: 0 }}>
-            <div class="w-1/3 flex flex-col gap-6 h-screen justify-center">
+            <div class="w-full sm:w-2/3 md:w-1/2 lg:w-1/3 flex flex-col gap-6 h-screen justify-center">
               <p class="text-xs font-light text-white leading-tight">
                 <SplitText text="Redefining Cross-Border Finance" chars={sec2Chars} />
               </p>
@@ -762,19 +767,19 @@ const App: Component = () => {
           </div>
           {/* section3 */}
           <div ref={sec3Ref} class="absolute inset-0 flex justify-start px-4 md:px-8" style={{ opacity: 0 }}>
-            <div class="w-1/2 flex flex-col gap-6 h-screen justify-center">
-              <p class="text-9xl font-light text-white leading-tight">
+            <div class="w-full sm:w-2/3 md:w-1/2 flex flex-col gap-6 h-screen justify-center">
+              <p class="text-4xl sm:text-5xl md:text-7xl lg:text-9xl font-light text-white leading-tight">
                 <SplitText text="Our Services" chars={sec3Chars} />
               </p>
             </div>
           </div>
           {/* section4 — fully triggered animations */}
           <div ref={sec4Ref} class="absolute inset-0 flex justify-end">
-            <div class="w-[40%] flex flex-col gap-6 h-screen justify-between bg-[#1a1e3a]/80 p-4">
+            <div class="w-full md:w-[50%] lg:w-[40%] flex flex-col gap-6 h-screen justify-between bg-[#1a1e3a]/80 p-4">
               <div class="relative">
                 {sec4Data.map((item, i) => (
                   <h1
-                    class={`text-6xl font-light text-white leading-tight ${i > 0 ? 'absolute top-0 left-0 right-0' : ''}`}
+                    class={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-white leading-tight ${i > 0 ? 'absolute top-0 left-0 right-0' : ''}`}
                   >
                     <SplitText text={item.title} chars={sec4TitleChars[i]} />
                   </h1>
@@ -797,19 +802,19 @@ const App: Component = () => {
           </div>
           {/* section5 */}
           <div ref={sec5Ref} class="absolute inset-0 flex justify-start px-4 md:px-8" style={{ opacity: 0 }}>
-            <div class="w-1/2 flex flex-col gap-6 h-screen justify-center">
-              <p class="text-9xl font-light text-white leading-tight">
+            <div class="w-full sm:w-2/3 md:w-1/2 flex flex-col gap-6 h-screen justify-center">
+              <p class="text-4xl sm:text-5xl md:text-7xl lg:text-9xl font-light text-white leading-tight">
                 <SplitText text="Capital Flow" chars={sec5Chars} />
               </p>
             </div>
           </div>
           {/* section6 — triggered animations */}
           <div ref={sec6Ref} class="absolute inset-0 flex justify-end">
-            <div class="w-[40%] flex flex-col gap-6 h-screen justify-between bg-[#1a1e3a]/80 p-4">
+            <div class="w-full md:w-[50%] lg:w-[40%] flex flex-col gap-6 h-screen justify-between bg-[#1a1e3a]/80 p-4">
               <div class="relative">
                 {sec6Data.map((item, i) => (
                   <h1
-                    class={`text-6xl font-light text-white leading-tight ${i > 0 ? 'absolute top-0 left-0 right-0' : ''}`}
+                    class={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-white leading-tight ${i > 0 ? 'absolute top-0 left-0 right-0' : ''}`}
                   >
                     <SplitText text={item.title} chars={sec6TitleChars[i]} />
                   </h1>
@@ -837,7 +842,7 @@ const App: Component = () => {
             <nav class="flex flex-col gap-2 px-6" onMouseLeave={hideDrawer2}>
               <For each={menuData}>
                 {(item, i) => (
-                  <a class="text-6xl text-white/70 hover:text-white transition-colors cursor-pointer py-2 flex items-center gap-2"
+                  <a class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white/70 hover:text-white transition-colors cursor-pointer py-2 flex items-center gap-2"
                     onMouseEnter={(e) => showDrawer2(i(), e)}
                   >{item.label} <span class="i-mdi-light-chevron-right text-2xl" /></a>
                 )}
@@ -870,12 +875,12 @@ const App: Component = () => {
               <div class="flex flex-row">
                 {/* Logo */}
                 <div class="flex items-center gap-2 rounded-l-md px-4 bg-[#1a1e3a]/30">
-                  <img src="/logo.svg" alt="Logo" class="lg:w-20 lg:h-20" />
-                  <p class="text-white lg:text-xl font-700">FLOW CAPITAL</p>
+                  <img src="/logo.svg" alt="Logo" class="w-10 h-10 md:w-14 md:h-14 lg:w-20 lg:h-20" />
+                  <p class="text-white text-sm md:text-base lg:text-xl font-700">FLOW CAPITAL</p>
                 </div>
                 {/* Hamburger */}
                 <button
-                  class="relative w-20 h-20 rounded-r-md border-white bg-[#6f738a]/40 border-0 cursor-pointer"
+                  class="relative w-10 h-10 md:w-14 md:h-14 lg:w-20 lg:h-20 rounded-r-md border-white bg-[#6f738a]/40 border-0 cursor-pointer"
                   onClick={toggleMenu}
                 >
                   <span ref={line1Ref} class="absolute left-1/2 top-1/2 -ml-4 block w-8 h-px bg-white" style={{ transform: 'translateY(-4px)' }} />
@@ -885,13 +890,13 @@ const App: Component = () => {
               {/* Get Started */}
               <div
                 ref={getStartedRef}
-                class="relative bg-orange-500 text-white lg:w-80 rounded-md overflow-hidden cursor-pointer"
+                class="relative bg-orange-500 text-white w-full sm:w-48 md:w-60 lg:w-80 rounded-md overflow-hidden cursor-pointer"
                 onMouseEnter={() => getStartedTl?.play()}
                 onMouseLeave={() => getStartedTl?.reverse()}
               >
                 {/* Header — 固定高度，蒙版和箭头锚定在此 */}
-                <div ref={headerRef} class="relative flex items-center gap-1 px-4 h-20">
-                  <p class="font-700">Get Started</p>
+                <div ref={headerRef} class="relative flex items-center gap-1 px-4 h-10 md:h-14 lg:h-20">
+                  <p class="font-700 text-xs md:text-sm lg:text-base">Get Started</p>
                   {/* 白色蒙版 */}
                   <div
                     ref={maskRef}
@@ -905,9 +910,9 @@ const App: Component = () => {
                 </div>
                 {/* 展开菜单 */}
                 <div class="px-4">
-                  <a class="block py-2 text-white/70 lg:text-xl hover:text-white transition-colors cursor-pointer" onClick={() => goToOverlay(0.9)}>Initiate Your Settlement</a>
+                  <a class="block py-2 text-white/70 text-sm md:text-base lg:text-xl hover:text-white transition-colors cursor-pointer" onClick={() => goToOverlay(0.9)}>Initiate Your Settlement</a>
                   <div class="mx-1 h-px bg-white/30" />
-                  <a class="block py-2 text-white/70 lg:text-xl hover:text-white transition-colors cursor-pointer" onClick={() => goToOverlay(1)}>Contact</a>
+                  <a class="block py-2 text-white/70 text-sm md:text-base lg:text-xl hover:text-white transition-colors cursor-pointer" onClick={() => goToOverlay(1)}>Contact</a>
                 </div>
               </div>
             </div>
@@ -922,7 +927,7 @@ const App: Component = () => {
             </div>
           </nav>
           <div ref={descRef} class="relative px-4 md:px-4 mt-8 md:mt-16 lg:mt-24 gap-8 lg:gap-0" >
-            <div class="bg-[#1a1e3a]/80 backdrop-blur-sm rounded-lg max-w-2xl flex flex-col justify-between mb-8 p-4 h-[30vh]">
+            <div class="bg-[#1a1e3a]/80 backdrop-blur-sm rounded-lg max-w-2xl flex flex-col justify-between mb-8 p-4 h-auto min-h-[20vh] md:h-[30vh]">
               <p class="text-gray-300 text-sm md:text-base lg:text-xl leading-relaxed">
                 <SplitText text="By combining blockchain infrastructure, compliant custody, and real-time settlement, Flow Capital enables seamless international transfers, treasury operations, and digital asset liquidity management for the modern global economy." chars={descChars} />
               </p>

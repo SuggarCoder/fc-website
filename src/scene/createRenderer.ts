@@ -10,7 +10,7 @@ export const createRenderer = (
 ): THREE.WebGLRenderer => {
   const renderer = new THREE.WebGLRenderer({ antialias: false });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(2);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   // toneMapping 由 postprocessing 的 ToneMappingEffect 处理
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.outputColorSpace = THREE.SRGBColorSpace;

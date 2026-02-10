@@ -195,6 +195,16 @@ export default function GooeyText() {
     )
   }
 
+  const handleTouchMove = (e: TouchEvent): void => {
+    const touch = e.touches[0]
+    if (!touch) return
+    const rect = svgEl.getBoundingClientRect()
+    mouseState = updateMouseOnMove(
+      mouseState,
+      vec2(touch.clientX - rect.left, touch.clientY - rect.top),
+    )
+  }
+
   const handleResize = (): void => {
     const vp: Viewport = { width: window.innerWidth - 4, height: window.innerHeight }
     setViewport(vp)
@@ -228,6 +238,7 @@ export default function GooeyText() {
   onMount(() => {
     handleResize()
     window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('touchmove', handleTouchMove)
     window.addEventListener('resize', handleResize)
     rafId = requestAnimationFrame(tick)
   })
@@ -235,6 +246,7 @@ export default function GooeyText() {
   onCleanup(() => {
     cancelAnimationFrame(rafId)
     window.removeEventListener('mousemove', handleMouseMove)
+    window.removeEventListener('touchmove', handleTouchMove)
     window.removeEventListener('resize', handleResize)
   })
 

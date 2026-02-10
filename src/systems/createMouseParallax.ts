@@ -33,6 +33,10 @@ export const createMouseParallax = (width: number, height: number): MouseParalla
     get y() { return state.y; },
 
     setup: () => {
+      // Skip parallax on touch-only devices (no hover support)
+      const hasHover = window.matchMedia('(hover: hover)').matches;
+      if (!hasHover) return;
+
       // Initialize quickTo with smooth easing
       quickX = gsap.quickTo(state, 'x', { duration: 0.6, ease: 'power2.out' });
       quickY = gsap.quickTo(state, 'y', { duration: 0.6, ease: 'power2.out' });
