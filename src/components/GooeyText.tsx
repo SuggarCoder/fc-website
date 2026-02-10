@@ -24,6 +24,7 @@ interface ParticleState {
   readonly pos: Vec2
   readonly vel: Vec2
   readonly size: number
+  readonly age: number
   readonly seed: number
   readonly freq: number
   readonly amplitude: number
@@ -46,6 +47,8 @@ const PARTICLE_DECAY = 0.85
 const PARTICLE_VEL_DECAY = 0.95
 const SMOOTH_FACTOR = 0.1
 const MIN_PARTICLE_SIZE = 1
+const MAX_PARTICLES = 150
+const MAX_PARTICLE_AGE = 120 // hard kill after 120 frames (~2s at 60fps)
 
 // ─── Pure Functions ──────────────────────────────────────────────────────────
 
@@ -121,6 +124,7 @@ const createParticle = (
     pos,
     vel,
     size,
+    age: 0,
     seed: Math.random() * 1000,
     freq: (0.5 + Math.random()) * 0.01,
     amplitude: (1 - Math.random() * 2) * 0.5,
@@ -137,15 +141,17 @@ const stepParticle = (p: ParticleState, time: number): ParticleState => {
   const pos = addVec(addVec(p.pos, wave), p.vel)
   const vel = scaleVec(p.vel, PARTICLE_VEL_DECAY)
   const size = (p.size + magVec(p.vel)) * PARTICLE_DECAY
+  const age = p.age + 1
 
   p.el.setAttribute('cx', String(pos.x))
   p.el.setAttribute('cy', String(pos.y))
   p.el.setAttribute('r', String(size))
 
-  return { ...p, pos, vel, size }
+  return { ...p, pos, vel, size, age }
 }
 
-const isAlive = (p: ParticleState): boolean => p.size >= MIN_PARTICLE_SIZE
+const isAlive = (p: ParticleState): boolean =>
+  p.size >= MIN_PARTICLE_SIZE && p.age < MAX_PARTICLE_AGE
 
 const emitParams = (
   mouse: MouseState,
@@ -163,21 +169,25 @@ const emitParams = (
         size: magVec(head.vel) * 3,
       }
 
+// Reuse arrays across frames to reduce GC pressure
+const _alive: ParticleState[] = []
+const _dead: ParticleState[] = []
+
 const partitionParticles = (
-  particles: readonly ParticleState[],
+  particles: ParticleState[],
   time: number,
 ): { alive: ParticleState[]; dead: ParticleState[] } => {
-  const alive: ParticleState[] = []
-  const dead: ParticleState[] = []
-  for (const p of particles) {
-    const updated = stepParticle(p, time)
+  _alive.length = 0
+  _dead.length = 0
+  for (let i = 0; i < particles.length; i++) {
+    const updated = stepParticle(particles[i], time)
     if (isAlive(updated)) {
-      alive.push(updated)
+      _alive.push(updated)
     } else {
-      dead.push(updated)
+      _dead.push(updated)
     }
   }
-  return { alive, dead }
+  return { alive: _alive, dead: _dead }
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -242,16 +252,19 @@ export default function GooeyText() {
     mouseState = stepMouse(mouseState)
     headState = stepHead(headState, viewport(), time)
 
-    // 2. emit new particle
-    const { pos, vel, size } = emitParams(mouseState, headState)
-    const newP = createParticle(pos, vel, size, particleCnt % 360)
-    particleCnt += 15
-    wrapperEl.prepend(newP.el)
+    // 2. emit new particle (capped to prevent unbounded growth)
+    if (particles.length < MAX_PARTICLES) {
+      const { pos, vel, size } = emitParams(mouseState, headState)
+      const newP = createParticle(pos, vel, size, particleCnt % 360)
+      particleCnt += 15
+      wrapperEl.prepend(newP.el)
+      particles.push(newP)
+    }
 
     // 3. step existing particles, partition alive / dead
-    const { alive, dead } = partitionParticles([...particles, newP], time)
-    dead.forEach(p => p.el.remove())
-    particles = alive
+    const { alive, dead } = partitionParticles(particles, time)
+    for (let i = 0; i < dead.length; i++) dead[i].el.remove()
+    particles = alive.slice()
 
     // 4. update cursor CSS vars
     cursorEl.style.setProperty('--x', mouseState.smooth.x + 'px')
