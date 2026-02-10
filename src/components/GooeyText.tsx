@@ -245,7 +245,7 @@ export default function GooeyText() {
     // 2. emit new particle
     const { pos, vel, size } = emitParams(mouseState, headState)
     const newP = createParticle(pos, vel, size, particleCnt % 360)
-    particleCnt += 5
+    particleCnt += 15
     wrapperEl.prepend(newP.el)
 
     // 3. step existing particles, partition alive / dead
