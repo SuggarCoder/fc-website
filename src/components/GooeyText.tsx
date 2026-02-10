@@ -84,9 +84,23 @@ const stepMouse = (m: MouseState): MouseState => {
   return { pos: m.pos, smooth, vel, smoothVel, diff }
 }
 
+const hasHover = typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches
+
 const stepHead = (prev: HeadState, vp: Viewport, time: number): HeadState => {
-  const x = vp.width * 0.5 + vp.width * 0.375 * Math.cos(time * 0.0006)
-  const y = vp.height * 0.5 + vp.width * 0.05 * Math.cos(time * 0.0011)
+  // 手机模式：更丰富的自动轨迹（8字形 + 多频叠加）
+  const cx = hasHover ? 0.5 : 0.55
+  const rx = hasHover ? 0.375 : 0.35
+  const ry = hasHover ? 0.05 : 0.15
+  const sx = hasHover ? 0.0006 : 0.0008
+  const sy = hasHover ? 0.0011 : 0.0013
+
+  const x = vp.width * cx
+    + vp.width * rx * Math.cos(time * sx)
+    + (hasHover ? 0 : vp.width * 0.08 * Math.sin(time * 0.0019))
+  const y = vp.height * 0.5
+    + vp.width * ry * Math.cos(time * sy)
+    + (hasHover ? 0 : vp.height * 0.1 * Math.sin(time * 0.0007))
+
   const newPos = vec2(x, y)
   return { pos: newPos, vel: vec2(prev.pos.x - x, prev.pos.y - y) }
 }
@@ -171,10 +185,21 @@ const partitionParticles = (
 export default function GooeyText() {
   const [viewport, setViewport] = createSignal<Viewport>({ width: 0, height: 0 })
   const viewBox = () => `0 0 ${viewport().width} ${viewport().height}`
-  const fontSize = () => Math.min(viewport().width * 0.18, viewport().height * 0.3)
-  // 两行文字垂直居中：lineHeight ≈ fontSize, 总高度 = 2 * lineHeight, 起点 = center - totalHeight/2
+  const isMobileView = () => viewport().width < 768
+
+  // 桌面：横排两行；手机：竖排两列，字体更大
+  const fontSize = () => isMobileView()
+    ? Math.min(viewport().width * 0.28, viewport().height * 0.14)
+    : Math.min(viewport().width * 0.18, viewport().height * 0.3)
+
+  // 桌面：两行水平排列，垂直居中
   const lineY1 = () => viewport().height * 0.5 - fontSize() * 0.15
   const lineY2 = () => viewport().height * 0.5 + fontSize() * 1.05
+
+  // 手机竖排：右对齐，垂直居中，两列从右往左排
+  const colX1 = () => viewport().width - fontSize() * 0.55        // CAPITAL（右列）
+  const colX2 = () => colX1() - fontSize() * 1.15                 // FLOAT（左列）
+  const colY = () => viewport().height * 0.5                      // 垂直居中
 
   let svgEl!: SVGSVGElement
   let wrapperEl!: SVGGElement
@@ -237,8 +262,9 @@ export default function GooeyText() {
 
   onMount(() => {
     handleResize()
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('touchmove', handleTouchMove)
+    if (hasHover) {
+      window.addEventListener('mousemove', handleMouseMove)
+    }
     window.addEventListener('resize', handleResize)
     rafId = requestAnimationFrame(tick)
   })
@@ -246,7 +272,6 @@ export default function GooeyText() {
   onCleanup(() => {
     cancelAnimationFrame(rafId)
     window.removeEventListener('mousemove', handleMouseMove)
-    window.removeEventListener('touchmove', handleTouchMove)
     window.removeEventListener('resize', handleResize)
   })
 
@@ -261,21 +286,25 @@ export default function GooeyText() {
       >
         <mask id="text">
           <text
-            x="95%" y={lineY1()}
+            x={isMobileView() ? colX2() : '95%'}
+            y={isMobileView() ? colY() : lineY1()}
             dominant-baseline="auto"
-            text-anchor="end"
+            text-anchor={isMobileView() ? 'middle' : 'end'}
             fill="white"
             font-family={FONT_FAMILY}
             font-weight="bold"
+            writing-mode={isMobileView() ? 'vertical-rl' : 'horizontal-tb'}
             style={{ 'font-size': `${fontSize()}px` }}
           >{TEXT_LINE1}</text>
           <text
-            x="95%" y={lineY2()}
+            x={isMobileView() ? colX1() : '95%'}
+            y={isMobileView() ? colY() : lineY2()}
             dominant-baseline="auto"
-            text-anchor="end"
+            text-anchor={isMobileView() ? 'middle' : 'end'}
             fill="white"
             font-family={FONT_FAMILY}
             font-weight="bold"
+            writing-mode={isMobileView() ? 'vertical-rl' : 'horizontal-tb'}
             style={{ 'font-size': `${fontSize()}px` }}
           >{TEXT_LINE2}</text>
         </mask>
@@ -288,21 +317,25 @@ export default function GooeyText() {
           />
         </filter>
         <text
-          x="95%" y={lineY1()}
+          x={isMobileView() ? colX2() : '95%'}
+          y={isMobileView() ? colY() : lineY1()}
           dominant-baseline="auto"
-          text-anchor="end"
+          text-anchor={isMobileView() ? 'middle' : 'end'}
           class="fill-[#111827] stroke-[#2a2a2a] stroke-[1px] font-bold leading-none [vector-effect:non-scaling-stroke]"
           font-family={FONT_FAMILY}
           font-weight="bold"
+          writing-mode={isMobileView() ? 'vertical-rl' : 'horizontal-tb'}
           style={{ 'font-size': `${fontSize()}px` }}
         >{TEXT_LINE1}</text>
         <text
-          x="95%" y={lineY2()}
+          x={isMobileView() ? colX1() : '95%'}
+          y={isMobileView() ? colY() : lineY2()}
           dominant-baseline="auto"
-          text-anchor="end"
+          text-anchor={isMobileView() ? 'middle' : 'end'}
           class="fill-[#111827] stroke-[#2a2a2a] stroke-[1px] font-bold leading-none [vector-effect:non-scaling-stroke]"
           font-family={FONT_FAMILY}
           font-weight="bold"
+          writing-mode={isMobileView() ? 'vertical-rl' : 'horizontal-tb'}
           style={{ 'font-size': `${fontSize()}px` }}
         >{TEXT_LINE2}</text>
         <g ref={wrapperEl!} filter="url(#gooey)" mask="url(#text)" class="js-wrapper" />
