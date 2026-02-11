@@ -769,7 +769,7 @@ const App: Component = () => {
           <div ref={sec3Ref} class="absolute inset-0 flex justify-start px-4 md:px-8" style={{ opacity: 0 }}>
             <div class="w-full sm:w-2/3 md:w-1/2 flex flex-col gap-6 h-screen justify-center">
               <p class="text-4xl sm:text-5xl md:text-7xl lg:text-9xl font-light text-white leading-tight">
-                <SplitText text="Our Services" chars={sec3Chars} />
+                <SplitText text="Shaping Curves" chars={sec3Chars} />
               </p>
             </div>
           </div>
