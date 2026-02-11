@@ -3,7 +3,7 @@ import gsap from 'gsap'
 
 const VELOCITY_DECAY = 0.85
 const PARTICLE_VEL_DECAY = 0.95
-const PARTICLE_DECAY = 0.98
+const PARTICLE_DECAY = 0.97
 const SMOOTH_FACTOR = 0.1
 
 export default function CanvasGooey() {
@@ -12,6 +12,8 @@ export default function CanvasGooey() {
   let svgRef!: SVGSVGElement
 
   let particles: any[] = []
+  // 限制最大粒子数，防止手机端爆炸
+  const MAX_PARTICLES = 150
   let mouse = { x: 0, y: 0, sx: 0, sy: 0, vx: 0, vy: 0, svx: 0, svy: 0 }
   let head = { x: 0, y: 0, vx: 0, vy: 0 }
   let particleCnt = 0
@@ -21,7 +23,8 @@ export default function CanvasGooey() {
   const layout = () => {
     const nw = window.innerWidth
     const nh = window.innerHeight
-    dpr = window.devicePixelRatio || 1
+    // 移动端降低渲染倍率：手机上 1.5 足够，2 或 3 太吃力
+    dpr = Math.min(window.devicePixelRatio || 1, 1.5)
     
     // Fix Safari Blur: Set canvas internal dimensions based on DPR
     canvasRef.width = nw * dpr
@@ -77,36 +80,50 @@ export default function CanvasGooey() {
   }
 
   const spawn = (x: number, y: number, vx: number, vy: number, size: number) => {
-    if (size < 1) return
+    if (size < 1 || particles.length > MAX_PARTICLES) return
     particles.push({ x, y, vx, vy, size, color: `hsl(${particleCnt % 360}, 100%, 50%)`, seed: Math.random() * 1000 })
     particleCnt += 1.5
   }
 
   const draw = (ctx: CanvasRenderingContext2D, time: number) => {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // Scale context for Retina
-    ctx.clearRect(0, 0, canvasRef.width / dpr, canvasRef.height / dpr)
+    // 不要在这里 setTransform，在 layout 里处理好坐标即可
+    ctx.clearRect(0, 0, canvasRef.width, canvasRef.height)
     
+    // 使用倒序遍历优化删除性能
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i]; 
       p.x += p.vx + Math.cos((time + p.seed) * 0.01) * 0.5; 
       p.y += p.vy + Math.sin((time + p.seed) * 0.01) * 0.5
-      p.vx *= PARTICLE_VEL_DECAY; p.vy *= PARTICLE_VEL_DECAY; p.size *= PARTICLE_DECAY
-      if (p.size < 0.5) { particles.splice(i, 1); continue }
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.fill()
+      p.vx *= PARTICLE_VEL_DECAY; 
+      p.vy *= PARTICLE_VEL_DECAY; 
+      p.size *= PARTICLE_DECAY
+      
+      if (p.size < 0.5) {
+        particles.splice(i, 1)
+        continue
+      }
+
+      ctx.beginPath()
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+      ctx.fillStyle = p.color
+      ctx.fill()
     }
   }
 
   onMount(() => {
     const ctx = canvasRef.getContext('2d', { alpha: true })!
     const onResize = () => layout()
+    // 鼠标/触摸移动逻辑优化：减少计算频率
+    const updateMouse = (nx: number, ny: number) => {
+      mouse.vx += mouse.x - nx; mouse.vy += mouse.y - ny
+      mouse.x = nx; mouse.y = ny
+    }
+
     const onTouchMove = (e: TouchEvent) => {
-      const touch = e.touches[0]
-      mouse.vx += mouse.x - touch.clientX; mouse.vy += mouse.y - touch.clientY
-      mouse.x = touch.clientX; mouse.y = touch.clientY
+    updateMouse(e.touches[0].clientX, e.touches[0].clientY)
     }
     const onMouseMove = (e: MouseEvent) => {
-      mouse.vx += mouse.x - e.clientX; mouse.vy += mouse.y - e.clientY
-      mouse.x = e.clientX; mouse.y = e.clientY
+    updateMouse(e.clientX, e.clientY)
     }
     
     window.addEventListener('resize', onResize)
@@ -142,7 +159,7 @@ export default function CanvasGooey() {
             <canvas 
                 ref={canvasRef} 
                 class="absolute inset-0 w-full h-full opacity-90" 
-                style={{ filter: 'blur(12px)', "-webkit-filter": 'blur(12px)' }}
+                style={{ filter: 'blur(12px)', "-webkit-filter": 'blur(12px)',"will-change": "transform" }}
             />
         </div>
 
