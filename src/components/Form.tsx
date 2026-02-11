@@ -1,4 +1,4 @@
-import { Component, For, Show, createSignal, createMemo, createEffect, onCleanup, onMount } from 'solid-js';
+import { Component, For, Show, createSignal, createMemo, onCleanup, onMount } from 'solid-js';
 
 const countries = [
   { code: 'CN', name: 'China', native: '中国', dial_code: '+86' },
@@ -56,7 +56,7 @@ const Form: Component = () => {
     const { scrollTop, scrollHeight, clientHeight } = scrollEl;
     const atTop = scrollTop <= 0 && e.deltaY < 0;
     const atBottom = scrollTop + clientHeight >= scrollHeight && e.deltaY > 0;
-    // 到顶/到底时阻止冒泡，否则只阻止冒泡让列表自己滚
+    
     if (atTop || atBottom) e.preventDefault();
     e.stopPropagation();
   };
@@ -73,130 +73,130 @@ const Form: Component = () => {
   });
 
   return (
+    // 修改 1: gap-y-12 -> gap-y-5 (大幅减少移动端垂直间距)
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-x-6 md:gap-x-10 gap-y-5 md:gap-y-12 w-full">
 
-    <section class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-12 md:gap-y-14">
-
+      {/* 修改 2: 使用 grid-cols-2 和 md:contents 技巧 */}
+      {/* 作用: 移动端 First/Last Name 并排显示，节省一行高度。桌面端保持原样。 */}
+      <div class="grid grid-cols-2 gap-4 md:contents">
         <FloatingInput label="First Name" required />
         <FloatingInput label="Last Name" required />
+      </div>
 
-        {/* Phone Number Item */}
-        <div class="relative border-b border-gray-200 focus-within:border-[#1a2b4b] pb-2 transition-colors">
-            <label class="block text-[10px] uppercase tracking-widest text-gray-400 mb-2">
-                Phone Number <span class="text-[#ff6b4a]">*</span>
-            </label>
-            <div class="flex items-center gap-3">
-                {/* Trigger */}
-                <div ref={dropdownRef} class="relative cursor-pointer select-none w-14 shrink-0"
-                     onClick={() => { setShowList(!showList()); setSearch(''); }}>
-                  <div class="flex items-center gap-1.5 text-[18px] md:text-[20px] font-medium text-[#1a2b4b]">
-                    <span class="w-7 inline-block">{selected().code}</span>
-                    <div class={`i-carbon-chevron-down text-[10px] mt-0.5 transition-transform duration-200 ${showList() ? 'rotate-180' : ''}`} />
-                  </div>
+      {/* Phone Number Item */}
+      <div class="relative border-b border-gray-200 focus-within:border-[#1a2b4b] pb-1 transition-colors">
+        <label class="block text-[10px] uppercase tracking-widest text-gray-400 mb-1">
+          Phone Number <span class="text-[#ff6b4a]">*</span>
+        </label>
+        <div class="flex items-center gap-2 md:gap-3">
+          {/* Trigger */}
+          <div ref={dropdownRef} class="relative cursor-pointer select-none w-12 md:w-14 shrink-0"
+               onClick={() => { setShowList(!showList()); setSearch(''); }}>
+            <div class="flex items-center gap-1 text-[16px] md:text-[20px] font-medium text-[#1a2b4b]">
+              <span class="w-6 md:w-7 inline-block">{selected().code}</span>
+              <div class={`i-carbon-chevron-down text-[10px] mt-0.5 transition-transform duration-200 ${showList() ? 'rotate-180' : ''}`} />
+            </div>
 
-                  {/* Searchable Dropdown Menu */}
-                  <Show when={showList()}>
-                    <div ref={menuRef} onWheel={handleWheel}
-                         class="absolute top-[calc(100%+8px)] left-0 z-50 w-[calc(100vw-3rem)] sm:w-72 md:w-80 bg-white rounded-lg overflow-hidden"
-                         style="box-shadow: 0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.08);">
-                      {/* Search Bar */}
-                      <div class="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="text"
-                          placeholder="Search"
-                          value={search()}
-                          onInput={(e) => setSearch(e.currentTarget.value)}
-                          class="w-full bg-transparent outline-none border-none appearance-none p-0 m-0 text-[14px] text-[#1a2b4b] placeholder-gray-300 font-light"
-                          autofocus
-                        />
+            {/* Searchable Dropdown Menu */}
+            <Show when={showList()}>
+              <div ref={menuRef} onWheel={handleWheel}
+                   class="absolute top-[calc(100%+8px)] left-0 z-50 w-[80vw] sm:w-72 md:w-80 bg-white rounded-lg overflow-hidden"
+                   style="box-shadow: 0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.08);">
+                {/* Search Bar */}
+                <div class="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="text"
+                    placeholder="Search"
+                    value={search()}
+                    onInput={(e) => setSearch(e.currentTarget.value)}
+                    class="w-full bg-transparent outline-none border-none appearance-none p-0 m-0 text-[14px] text-[#1a2b4b] placeholder-gray-300 font-light"
+                    autofocus
+                  />
+                </div>
+                <div class="h-px bg-gray-100 mx-4" />
+                <style>{`
+                  .phone-scroll::-webkit-scrollbar { width: 1px; }
+                  .phone-scroll::-webkit-scrollbar-track { background: transparent; }
+                  .phone-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
+                  .phone-scroll { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.15) transparent; }
+                `}</style>
+                <div class="max-h-48 md:max-h-64 overflow-y-auto py-1 phone-scroll">
+                  <For each={filtered()}>
+                    {(item) => (
+                      <div
+                        class="flex items-center px-4 py-2.5 hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelected({ code: item.code, dial: item.dial_code });
+                          setShowList(false);
+                          setSearch('');
+                        }}
+                      >
+                        <span class="text-[13px] text-gray-400 uppercase w-8 shrink-0 font-medium">{item.code}</span>
+                        <span class="text-[14px] text-[#1a2b4b] font-normal truncate">
+                          {item.name}
+                        </span>
+                        <span class="text-[13px] text-[#8ba3c7] ml-auto pl-3 shrink-0">{item.dial_code}</span>
                       </div>
-                      {/* Divider */}
-                      <div class="h-px bg-gray-100 mx-4" />
-                      {/* Country List */}
-                      <style>{`
-                        .phone-scroll::-webkit-scrollbar { width: 1px; }
-                        .phone-scroll::-webkit-scrollbar-track { background: transparent; }
-                        .phone-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
-                        .phone-scroll { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.15) transparent; }
-                      `}</style>
-                      <div class="max-h-64 overflow-y-auto py-1 phone-scroll">
-                        <For each={filtered()}>
-                          {(item) => (
-                            <div
-                              class="flex items-center px-4 py-2.5 hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelected({ code: item.code, dial: item.dial_code });
-                                setShowList(false);
-                                setSearch('');
-                              }}
-                            >
-                              <span class="text-[13px] text-gray-400 uppercase w-8 shrink-0 font-medium">{item.code}</span>
-                              <span class="text-[14px] text-[#1a2b4b] font-normal truncate">
-                                {item.name}
-                                {item.native && <span class="text-gray-400 font-light"> ({item.native})</span>}
-                              </span>
-                              <span class="text-[13px] text-[#8ba3c7] ml-auto pl-3 shrink-0">{item.dial_code}</span>
-                            </div>
-                          )}
-                        </For>
-                        <Show when={filtered().length === 0}>
-                          <div class="px-4 py-6 text-center text-[13px] text-gray-300">No results</div>
-                        </Show>
-                      </div>
-                    </div>
+                    )}
+                  </For>
+                  <Show when={filtered().length === 0}>
+                    <div class="px-4 py-6 text-center text-[13px] text-gray-300">No results</div>
                   </Show>
                 </div>
-                <span class="text-[18px] md:text-[20px] text-gray-300 font-light w-12 shrink-0">{selected().dial}</span>
-                <input type="tel" class="w-full bg-transparent outline-none border-none appearance-none p-0 m-0 text-[18px] md:text-[20px] font-light" />
-            </div>
+              </div>
+            </Show>
+          </div>
+          <span class="text-[16px] md:text-[20px] text-gray-300 font-light w-10 md:w-12 shrink-0">{selected().dial}</span>
+          <input type="tel" class="w-full bg-transparent outline-none border-none appearance-none p-0 m-0 text-[16px] md:text-[20px] font-light" />
         </div>
+      </div>
 
-        <FloatingInput label="E-mail" type="email" required />
-        
-        <div class="md:col-span-2">
+      <FloatingInput label="E-mail" type="email" required />
+      
+      <div class="md:col-span-2">
         <FloatingInput label="Company Name" required />
-        </div>
+      </div>
 
-        {/* Bottom Action: 移动端按钮全宽 */}
-        <div class="md:col-span-2 flex flex-col md:flex-row justify-between items-start md:items-end mt-4 gap-8">
-            <p class="text-[10px] text-gray-400 leading-tight max-w-[240px]">
-                By clicking the Submit button you agree to our <br />
+      {/* Bottom Action: 修改布局 */}
+      <div class="md:col-span-2 flex flex-col md:flex-row justify-between items-center md:items-end mt-2 md:mt-4 gap-4 md:gap-8">
+          {/* 移动端: 隐私协议放在按钮下方，且字号变小 */}
+          <div class="order-2 md:order-1 text-center md:text-left">
+            <p class="text-[10px] text-gray-400 leading-tight">
+                By clicking Submit you agree to our <br class="hidden md:block"/>
                 <strong class="text-gray-500 underline decoration-gray-300">Privacy Policy</strong> terms
             </p>
-            <button class="relative bg-orange-500 text-white text-left w-full md:w-60 py-4 px-6 rounded-md group transition-all border-none appearance-none cursor-pointer outline-none">
-                <span class="text-sm font-bold tracking-wide">Submit</span>
-                <div class="i-mdi-light-chevron-right text-xl absolute right-4 bottom-1 group-hover:translate-x-1 transition-transform" />
-            </button>
-        </div>
-        
+          </div>
+          
+          {/* 移动端: 按钮高度 py-3 (原 py-4)，更紧凑 */}
+          <button class="order-1 md:order-2 relative bg-orange-500 text-white text-left w-full md:w-60 py-3 md:py-4 px-6 rounded-md group transition-all border-none appearance-none cursor-pointer outline-none shadow-lg shadow-orange-500/20">
+              <span class="text-sm font-bold tracking-wide">Submit</span>
+              <div class="i-mdi-light-chevron-right text-xl absolute right-4 bottom-[0.8rem] md:bottom-1 group-hover:translate-x-1 transition-transform" />
+          </button>
+      </div>
+      
     </section>
   );
 };
 
-// 浮动标签子组件 (响应式字号)
+// 浮动标签子组件 (优化版)
 const FloatingInput: Component<{ label: string; required?: boolean; type?: string }> = (props) => (
-  <div class="relative border-b border-gray-200 focus-within:border-[#1a2b4b] transition-colors pb-2">
+  // pb-1 减少底部内边距
+  <div class="relative border-b border-gray-200 focus-within:border-[#1a2b4b] transition-colors pb-1 w-full">
     <input
       type={props.type || 'text'}
       placeholder=" "
-      class="peer w-full bg-transparent outline-none border-none appearance-none p-0 m-0 text-[18px] md:text-[20px] font-light"
+      // 移动端字号调整: text-[16px] 避免 iOS 自动缩放，且更紧凑
+      class="peer w-full bg-transparent outline-none border-none appearance-none p-0 m-0 text-[16px] md:text-[20px] font-light leading-normal"
     />
-    <label class="absolute left-0 top-0 text-[18px] md:text-[20px] text-gray-400 transition-all duration-200 pointer-events-none
-                  peer-focus:-top-6 peer-focus:text-[10px] peer-focus:uppercase peer-focus:tracking-widest
-                  peer-[:not(:placeholder-shown)]:-top-6 peer-[:not(:placeholder-shown)]:text-[10px] peer-[:not(:placeholder-shown)]:uppercase">
+    <label class="absolute left-0 top-0 text-[16px] md:text-[20px] text-gray-400 transition-all duration-200 pointer-events-none truncate max-w-full
+                  peer-focus:-top-4 peer-focus:text-[10px] peer-focus:uppercase peer-focus:tracking-widest
+                  peer-[:not(:placeholder-shown)]:-top-4 peer-[:not(:placeholder-shown)]:text-[10px] peer-[:not(:placeholder-shown)]:uppercase">
       {props.label} {props.required && <span class="text-[#ff6b4a]">*</span>}
     </label>
-    <div class="w-full h-1 border border-solid border-t-0 border-black/10 mt-4"/>
-  </div>
-);
-
-// 下拉展示子组件
-const StaticSelect: Component<{ label: string; required?: boolean }> = (props) => (
-  <div class="relative border-b border-gray-200 pb-2 cursor-pointer flex justify-between items-end group">
-    <label class="text-[18px] md:text-[20px] text-gray-400 group-hover:text-gray-600 transition-colors">
-      {props.label} {props.required && <span class="text-[#ff6b4a]">*</span>}
-    </label>
-    <div class="i-carbon-chevron-down text-gray-300 mb-1 group-hover:text-gray-500 transition-colors" />
+    
+    {/* 修改 3: 移除 mt-4，改为 mt-1。原先的 mt-4 浪费了每个输入框约 16px 的高度 */}
+    <div class="w-full h-px border-0 mt-1"/>
   </div>
 );
 

@@ -731,7 +731,7 @@ const App: Component = () => {
   return (
     <>
       <div ref={containerRef} class="fixed inset-0 w-full h-full" />
-      <div ref={pinRef} class="relative w-full h-screen">
+      <div ref={pinRef} class="relative w-full h-screen overflow-hidden touch-none">
           <div ref={whiteOverlayRef} class="absolute inset-0 bg-white z-40" style={{ transform: 'translateY(100%)' }} >
             <div class="flex flex-col p-4 pt-16 sm:p-6 md:p-8 lg:p-20 lg:pt-20 gap-8 md:gap-12">
               <h1 class="text-4xl sm:text-5xl md:text-7xl lg:text-9xl">Request <br />A Connect</h1>
