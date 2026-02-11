@@ -60,7 +60,7 @@ const menuData = [
     ),
   },
   {
-    label: 'Compliance',
+    label: 'Connect',
     content: () => (
       <ul class="flex flex-col gap-3 px-8 list-none">
         <li class="text-white/60 text-base leading-relaxed text-xl">Multi-layer custody and wallet security</li>
@@ -73,16 +73,16 @@ const menuData = [
 
 const sec4Data = [
   {
-    title: 'Cross-Border Payments',
-    desc: "Flow Capital's Cross-Border Payments solution enables businesses and institutions to move capital globally with speed, transparency, and reliability. By leveraging blockchain-based settlement rails, we significantly reduce transfer times and costs compared to traditional correspondent banking networks. Payments can be initiated via platform or API and settled in near real time, improving cash flow visibility and operational efficiency. Built-in compliance checks ensure alignment with KYC, AML, and regulatory requirements across jurisdictions. With predictable settlement, transparent pricing, and global coverage, Flow Capital provides a modern, scalable alternative for international payments.",
+    title: 'Infrastructure Incubation',
+    desc: "Float Capital incubates blockchain projects at the architectural level—focusing on DAG-based frameworks, scalable protocol design, and foundational infrastructure. We help teams build systems capable of handling parallel execution, dynamic growth, and evolving market behavior.",
   },
   {
-    title: 'Treasury & Liquidity Management',
-    desc: 'Flow Capital offers integrated Treasury and Liquidity Management solutions for organizations operating across multiple markets and currencies. Our platform provides real-time visibility into balances, enables efficient capital allocation, and supports both fiat and digital assets. Faster settlement cycles reduce idle capital and improve liquidity utilization, while programmable workflows streamline treasury operations. Institutional-grade custody, monitoring, and reporting ensure security and compliance at every stage. Flow Capital transforms global treasury management into a more agile, efficient, and strategic function.',
+    title: 'AI-Driven Multi-Layer Trading Systems',
+    desc: 'We support and develop AI agent–based trading systems that operate across multiple layers—protocol, liquidity, volatility, and strategy. These agents adapt in real time, navigating intersections and responding to shifts before they become visible.',
   },
   {
-    title: 'On- & Off-Ramp Solutions',
-    desc: "Flow Capital's On- and Off-Ramp solutions provide seamless conversion between fiat currencies and digital assets through compliant, transparent infrastructure. Clients benefit from predictable pricing, fast settlement, and reliable access to liquidity without operational complexity. Robust KYC, AML, and transaction monitoring frameworks are embedded throughout the conversion process, supporting regulatory alignment across regions. Our APIs enable easy integration into existing platforms, allowing businesses and institutions to confidently bridge traditional finance and the digital asset ecosystem.",
+    title: 'Strategic Capital Deployment',
+    desc: "Float Capital deploys capital at structural inflection points—where technology, team, and timing align. Our investment philosophy focuses on durability over hype, backing systems designed to extend beyond initial acceleration and maintain long-term market presence.",
   },
 ];
 
@@ -757,11 +757,11 @@ const App: Component = () => {
           <div ref={sec2Ref} class="absolute inset-0 flex justify-end px-4 md:px-8" style={{ opacity: 0 }}>
             <div class="w-full sm:w-2/3 md:w-1/2 lg:w-1/3 flex flex-col gap-6 h-screen justify-center">
               <p class="text-xs font-light text-white leading-tight">
-                <SplitText text="Redefining Cross-Border Finance" chars={sec2Chars} />
+                <SplitText text="Engineering Direction in Decentralized Markets." chars={sec2Chars} />
               </p>
               <div ref={sec2LineRef} class="w-full h-2 border border-solid border-b-0 border-white/50" style={{ opacity: 0 }} />
               <p class="text-gray-300 text-sm md:text-base lg:text-lg leading-relaxed">
-                <SplitText text="The global financial landscape is undergoing a fundamental transformation. Traditional correspondent banking networks, built decades ago, remain slow, opaque, and expensive. Settlement windows stretch across days, intermediary fees compound at every hop, and compliance requirements fragment across jurisdictions. For businesses operating internationally, these inefficiencies translate directly into lost revenue and constrained growth." chars={sec2Chars} />
+                <SplitText text="Float Capital incubates and invests in next-generation blockchain systems—where architecture, intelligence, and capital align to create scalable infrastructure, autonomous market dynamics, and long-term structural value across decentralized economies." chars={sec2Chars} />
               </p>
             </div>
           </div>
@@ -844,6 +844,7 @@ const App: Component = () => {
                 {(item, i) => (
                   <a class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white/70 hover:text-white transition-colors cursor-pointer py-2 flex items-center gap-2"
                     onMouseEnter={(e) => showDrawer2(i(), e)}
+                    onClick={() => goToOverlay([0.144, 0.36, 0.68, 0.9][i()])}
                   >{item.label} <span class="i-mdi-light-chevron-right text-2xl" /></a>
                 )}
               </For>
@@ -876,7 +877,7 @@ const App: Component = () => {
                 {/* Logo */}
                 <div class="flex items-center gap-2 rounded-l-md px-4 bg-[#1a1e3a]/30">
                   <img src="/logo.svg" alt="Logo" class="w-10 h-10 md:w-14 md:h-14 lg:w-20 lg:h-20" />
-                  <p class="text-white text-sm md:text-base lg:text-xl font-700">FLOW CAPITAL</p>
+                  <p class="text-white text-sm md:text-base lg:text-xl font-700">FLOAT CAPITAL</p>
                 </div>
                 {/* Hamburger */}
                 <button
@@ -910,26 +911,25 @@ const App: Component = () => {
                 </div>
                 {/* 展开菜单 */}
                 <div class="px-4">
-                  <a class="block py-2 text-white/70 text-sm md:text-base lg:text-xl hover:text-white transition-colors cursor-pointer" onClick={() => goToOverlay(0.9)}>Initiate Your Settlement</a>
+                  <a class="block py-2 text-white/70 text-sm md:text-base lg:text-xl hover:text-white transition-colors cursor-pointer" onClick={() => goToOverlay(0.9)}>Contact US</a>
                   <div class="mx-1 h-px bg-white/30" />
-                  <a class="block py-2 text-white/70 text-sm md:text-base lg:text-xl hover:text-white transition-colors cursor-pointer" onClick={() => goToOverlay(1)}>Contact</a>
                 </div>
               </div>
             </div>
             <div ref={heroRef} class="flex-1 flex items-center justify-center lg:justify-end lg:text-right sm:w-full">
               <h1 class="text-7xl sm:text-8xl md:text-8xl lg:text-8xl xl:text-9xl font-light leading-[0.95] tracking-tight text-center lg:text-right">
-                <SplitText text="Capital" class="text-orange-500" chars={heroChars} />
+                <SplitText text="Chain" class="text-orange-500" chars={heroChars} />
                 <br />
-                <SplitText text="Without" class="text-white" chars={heroChars} />
+                <SplitText text="Incubation" class="text-white" chars={heroChars} />
                 <br />
-                <SplitText text="Borders" class="text-white" chars={heroChars} />
+                <SplitText text="Investment" class="text-white" chars={heroChars} />
               </h1>
             </div>
           </nav>
           <div ref={descRef} class="relative px-4 md:px-4 mt-8 md:mt-16 lg:mt-24 gap-8 lg:gap-0" >
-            <div class="bg-[#1a1e3a]/80 backdrop-blur-sm rounded-lg max-w-2xl flex flex-col justify-between mb-8 p-4 h-auto min-h-[20vh] md:h-[30vh]">
+            <div class="bg-[#1a1e3a]/80 backdrop-blur-sm rounded-lg max-w-3xl flex flex-col justify-between mb-8 p-4 h-auto min-h-[20vh] md:h-[30vh]">
               <p class="text-gray-300 text-sm md:text-base lg:text-xl leading-relaxed">
-                <SplitText text="By combining blockchain infrastructure, compliant custody, and real-time settlement, Flow Capital enables seamless international transfers, treasury operations, and digital asset liquidity management for the modern global economy." chars={descChars} />
+                <SplitText text="Float Capital focuses on next-generation blockchain systems built on DAG-based architectures, enabling parallel processing, higher throughput, and non-linear scalability. These structures reflect how real markets evolve—not as a single chain, but as multiple paths forming simultaneously. We incubate projects where infrastructure is designed for complexity from day one." chars={descChars} />
               </p>
               <div data-flicker-btn class="bg-white/10 mt-6 w-10 h-10 flex items-center justify-center rounded-md text-gray hover:text-white transition-colors self-end cursor-pointer" onClick={() => scrollSystem?.scrollToProgress(0.144)}>
                 <span class="i-mdi-light-chevron-down text-2xl" />
