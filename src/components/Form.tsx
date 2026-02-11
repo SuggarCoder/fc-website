@@ -1,4 +1,5 @@
 import { Component, For, Show, createSignal, createMemo, onCleanup, onMount } from 'solid-js';
+import { Portal } from 'solid-js/web';
 
 const countries = [
   { code: 'CN', name: 'China', native: '中国', dial_code: '+86' },
@@ -30,11 +31,89 @@ const countries = [
   { code: 'NZ', name: 'New Zealand', native: '', dial_code: '+64' },
 ];
 
+// ── Toast 组件 ──
+type ToastType = 'loading' | 'success' | 'error';
+
+const Toast: Component<{ message: string; type: ToastType; visible: boolean }> = (props) => {
+  const bgColor = () => {
+    switch (props.type) {
+      case 'loading': return 'bg-[#1a2b4b]';
+      case 'success': return 'bg-green-600';
+      case 'error': return 'bg-red-500';
+    }
+  };
+
+  const icon = () => {
+    switch (props.type) {
+      case 'loading': return (
+        <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
+      );
+      case 'success': return <div class="i-mdi-light-check text-lg shrink-0" />;
+      case 'error': return <div class="i-mdi-light-alert-circle text-lg shrink-0" />;
+    }
+  };
+
+  return (
+    <Portal>
+      <div
+        class={`fixed top-6 left-1/2 z-[9999] flex items-center gap-2.5 px-5 py-3 rounded-lg text-white text-sm shadow-xl transition-all duration-300 pointer-events-none ${bgColor()}`}
+        style={{
+          transform: props.visible ? 'translate(-50%, 0)' : 'translate(-50%, -120%)',
+          opacity: props.visible ? 1 : 0,
+        }}
+      >
+        {icon()}
+        <span>{props.message}</span>
+      </div>
+    </Portal>
+  );
+};
+
 const Form: Component = () => {
   const [selected, setSelected] = createSignal({ code: 'JP', dial: '+81' });
   const [showList, setShowList] = createSignal(false);
   const [search, setSearch] = createSignal('');
   let dropdownRef: HTMLDivElement | undefined;
+
+  // 表单字段
+  const [firstName, setFirstName] = createSignal('');
+  const [lastName, setLastName] = createSignal('');
+  const [phone, setPhone] = createSignal('');
+  const [email, setEmail] = createSignal('');
+  const [company, setCompany] = createSignal('');
+
+  // 提交状态
+  const [sending, setSending] = createSignal(false);
+
+  // Toast 状态
+  const [toastVisible, setToastVisible] = createSignal(false);
+  const [toastMessage, setToastMessage] = createSignal('');
+  const [toastType, setToastType] = createSignal<ToastType>('loading');
+  let toastTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const showToast = (msg: string, type: ToastType, duration = 0) => {
+    clearTimeout(toastTimer);
+    setToastMessage(msg);
+    setToastType(type);
+    setToastVisible(true);
+    if (duration > 0) {
+      toastTimer = setTimeout(() => setToastVisible(false), duration);
+    }
+  };
+
+  const hideToast = () => {
+    clearTimeout(toastTimer);
+    setToastVisible(false);
+  };
+
+  const resetForm = () => {
+    setFirstName('');
+    setLastName('');
+    setPhone('');
+    setEmail('');
+    setCompany('');
+    setSelected({ code: 'JP', dial: '+81' });
+  };
 
   // 点击外部关闭下拉
   const handleClickOutside = (e: MouseEvent) => {
@@ -45,7 +124,10 @@ const Form: Component = () => {
   };
 
   onMount(() => document.addEventListener('mousedown', handleClickOutside));
-  onCleanup(() => document.removeEventListener('mousedown', handleClickOutside));
+  onCleanup(() => {
+    document.removeEventListener('mousedown', handleClickOutside);
+    clearTimeout(toastTimer);
+  });
 
   // 下拉打开时拦截 wheel 事件，阻止 Lenis 滚动
   let menuRef: HTMLDivElement | undefined;
@@ -56,7 +138,7 @@ const Form: Component = () => {
     const { scrollTop, scrollHeight, clientHeight } = scrollEl;
     const atTop = scrollTop <= 0 && e.deltaY < 0;
     const atBottom = scrollTop + clientHeight >= scrollHeight && e.deltaY > 0;
-    
+
     if (atTop || atBottom) e.preventDefault();
     e.stopPropagation();
   };
@@ -72,121 +154,177 @@ const Form: Component = () => {
     );
   });
 
+  const handleSubmit = async () => {
+    if (sending()) return;
+
+    if (!firstName().trim() || !lastName().trim() || !email().trim() || !company().trim()) {
+      showToast('Please fill in all required fields.', 'error', 3000);
+      return;
+    }
+
+    setSending(true);
+    showToast('Submitting...', 'loading');
+
+    try {
+      const res = await fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: firstName().trim(),
+          lastName: lastName().trim(),
+          phone: phone().trim() ? `${selected().dial} ${phone().trim()}` : '',
+          email: email().trim(),
+          company: company().trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Send failed');
+
+      showToast('Submitted successfully!', 'success', 3000);
+      resetForm();
+    } catch (e: any) {
+      showToast(e.message || 'Something went wrong. Please try again.', 'error', 4000);
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
-    // 修改 1: gap-y-12 -> gap-y-5 (大幅减少移动端垂直间距)
-    <section class="grid grid-cols-1 md:grid-cols-2 gap-x-6 md:gap-x-10 gap-y-5 md:gap-y-12 w-full">
+    <>
+      <Toast message={toastMessage()} type={toastType()} visible={toastVisible()} />
 
-      {/* 修改 2: 使用 grid-cols-2 和 md:contents 技巧 */}
-      {/* 作用: 移动端 First/Last Name 并排显示，节省一行高度。桌面端保持原样。 */}
-      <div class="grid grid-cols-2 gap-4 md:contents">
-        <FloatingInput label="First Name" required />
-        <FloatingInput label="Last Name" required />
-      </div>
+      <section class="grid grid-cols-1 md:grid-cols-2 gap-x-6 md:gap-x-10 gap-y-5 md:gap-y-12 w-full">
 
-      {/* Phone Number Item */}
-      <div class="relative border-b border-gray-200 focus-within:border-[#1a2b4b] pb-1 transition-colors">
-        <label class="block text-[10px] uppercase tracking-widest text-gray-400 mb-1">
-          Phone Number <span class="text-[#ff6b4a]">*</span>
-        </label>
-        <div class="flex items-center gap-2 md:gap-3">
-          {/* Trigger */}
-          <div ref={dropdownRef} class="relative cursor-pointer select-none w-12 md:w-14 shrink-0"
-               onClick={() => { setShowList(!showList()); setSearch(''); }}>
-            <div class="flex items-center gap-1 text-[16px] md:text-[20px] font-medium text-[#1a2b4b]">
-              <span class="w-6 md:w-7 inline-block">{selected().code}</span>
-              <div class={`i-carbon-chevron-down text-[10px] mt-0.5 transition-transform duration-200 ${showList() ? 'rotate-180' : ''}`} />
+        <div class="grid grid-cols-2 gap-4 md:contents">
+          <FloatingInput label="First Name" required value={firstName()} onInput={setFirstName} />
+          <FloatingInput label="Last Name" required value={lastName()} onInput={setLastName} />
+        </div>
+
+        {/* Phone Number Item */}
+        <div class="relative border-b border-gray-200 focus-within:border-[#1a2b4b] pb-1 transition-colors">
+          <label class="block text-[10px] uppercase tracking-widest text-gray-400 mb-1">
+            Phone Number <span class="text-[#ff6b4a]">*</span>
+          </label>
+          <div class="flex items-center gap-2 md:gap-3">
+            {/* Trigger */}
+            <div ref={dropdownRef} class="relative cursor-pointer select-none w-12 md:w-14 shrink-0"
+                 onClick={() => { setShowList(!showList()); setSearch(''); }}>
+              <div class="flex items-center gap-1 text-[16px] md:text-[20px] font-medium text-[#1a2b4b]">
+                <span class="w-6 md:w-7 inline-block">{selected().code}</span>
+                <div class={`i-carbon-chevron-down text-[10px] mt-0.5 transition-transform duration-200 ${showList() ? 'rotate-180' : ''}`} />
+              </div>
+
+              {/* Searchable Dropdown Menu */}
+              <Show when={showList()}>
+                <div ref={menuRef} onWheel={handleWheel}
+                     class="absolute top-[calc(100%+8px)] left-0 z-50 w-[80vw] sm:w-72 md:w-80 bg-white rounded-lg overflow-hidden"
+                     style="box-shadow: 0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.08);">
+                  {/* Search Bar */}
+                  <div class="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="text"
+                      placeholder="Search"
+                      value={search()}
+                      onInput={(e) => setSearch(e.currentTarget.value)}
+                      class="w-full bg-transparent outline-none border-none appearance-none p-0 m-0 text-[14px] text-[#1a2b4b] placeholder-gray-300 font-light"
+                      autofocus
+                    />
+                  </div>
+                  <div class="h-px bg-gray-100 mx-4" />
+                  <style>{`
+                    .phone-scroll::-webkit-scrollbar { width: 1px; }
+                    .phone-scroll::-webkit-scrollbar-track { background: transparent; }
+                    .phone-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
+                    .phone-scroll { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.15) transparent; }
+                  `}</style>
+                  <div class="max-h-48 md:max-h-64 overflow-y-auto py-1 phone-scroll">
+                    <For each={filtered()}>
+                      {(item) => (
+                        <div
+                          class="flex items-center px-4 py-2.5 hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelected({ code: item.code, dial: item.dial_code });
+                            setShowList(false);
+                            setSearch('');
+                          }}
+                        >
+                          <span class="text-[13px] text-gray-400 uppercase w-8 shrink-0 font-medium">{item.code}</span>
+                          <span class="text-[14px] text-[#1a2b4b] font-normal truncate">
+                            {item.name}
+                          </span>
+                          <span class="text-[13px] text-[#8ba3c7] ml-auto pl-3 shrink-0">{item.dial_code}</span>
+                        </div>
+                      )}
+                    </For>
+                    <Show when={filtered().length === 0}>
+                      <div class="px-4 py-6 text-center text-[13px] text-gray-300">No results</div>
+                    </Show>
+                  </div>
+                </div>
+              </Show>
+            </div>
+            <span class="text-[16px] md:text-[20px] text-gray-300 font-light w-10 md:w-12 shrink-0">{selected().dial}</span>
+            <input
+              type="tel"
+              value={phone()}
+              onInput={(e) => setPhone(e.currentTarget.value)}
+              class="w-full bg-transparent outline-none border-none appearance-none p-0 m-0 text-[16px] md:text-[20px] font-light"
+            />
+          </div>
+        </div>
+
+        <FloatingInput label="E-mail" type="email" required value={email()} onInput={setEmail} />
+
+        <div class="md:col-span-2">
+          <FloatingInput label="Company Name" required value={company()} onInput={setCompany} />
+        </div>
+
+        {/* Bottom Action */}
+        <div class="md:col-span-2 flex flex-col md:flex-row justify-between items-center md:items-end mt-2 md:mt-4 gap-4 md:gap-8">
+            <div class="order-2 md:order-1 text-center md:text-left">
+              <p class="text-[10px] text-gray-400 leading-tight">
+                  By clicking Submit you agree to our <br class="hidden md:block"/>
+                  <strong class="text-gray-500 underline decoration-gray-300">Privacy Policy</strong> terms
+              </p>
             </div>
 
-            {/* Searchable Dropdown Menu */}
-            <Show when={showList()}>
-              <div ref={menuRef} onWheel={handleWheel}
-                   class="absolute top-[calc(100%+8px)] left-0 z-50 w-[80vw] sm:w-72 md:w-80 bg-white rounded-lg overflow-hidden"
-                   style="box-shadow: 0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.08);">
-                {/* Search Bar */}
-                <div class="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                  <input
-                    type="text"
-                    placeholder="Search"
-                    value={search()}
-                    onInput={(e) => setSearch(e.currentTarget.value)}
-                    class="w-full bg-transparent outline-none border-none appearance-none p-0 m-0 text-[14px] text-[#1a2b4b] placeholder-gray-300 font-light"
-                    autofocus
-                  />
-                </div>
-                <div class="h-px bg-gray-100 mx-4" />
-                <style>{`
-                  .phone-scroll::-webkit-scrollbar { width: 1px; }
-                  .phone-scroll::-webkit-scrollbar-track { background: transparent; }
-                  .phone-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
-                  .phone-scroll { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.15) transparent; }
-                `}</style>
-                <div class="max-h-48 md:max-h-64 overflow-y-auto py-1 phone-scroll">
-                  <For each={filtered()}>
-                    {(item) => (
-                      <div
-                        class="flex items-center px-4 py-2.5 hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelected({ code: item.code, dial: item.dial_code });
-                          setShowList(false);
-                          setSearch('');
-                        }}
-                      >
-                        <span class="text-[13px] text-gray-400 uppercase w-8 shrink-0 font-medium">{item.code}</span>
-                        <span class="text-[14px] text-[#1a2b4b] font-normal truncate">
-                          {item.name}
-                        </span>
-                        <span class="text-[13px] text-[#8ba3c7] ml-auto pl-3 shrink-0">{item.dial_code}</span>
-                      </div>
-                    )}
-                  </For>
-                  <Show when={filtered().length === 0}>
-                    <div class="px-4 py-6 text-center text-[13px] text-gray-300">No results</div>
-                  </Show>
-                </div>
-              </div>
-            </Show>
-          </div>
-          <span class="text-[16px] md:text-[20px] text-gray-300 font-light w-10 md:w-12 shrink-0">{selected().dial}</span>
-          <input type="tel" class="w-full bg-transparent outline-none border-none appearance-none p-0 m-0 text-[16px] md:text-[20px] font-light" />
+            <button
+              onClick={handleSubmit}
+              disabled={sending()}
+              class={`order-1 md:order-2 relative bg-orange-500 text-white text-left w-full md:w-60 py-3 md:py-4 px-6 rounded-md group transition-all border-none appearance-none cursor-pointer outline-none shadow-lg shadow-orange-500/20 ${
+                sending() ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+            >
+                <span class="text-sm font-bold tracking-wide">
+                  {sending() ? 'Sending...' : 'Submit'}
+                </span>
+                <Show when={!sending()}>
+                  <div class="i-mdi-light-chevron-right text-xl absolute right-4 bottom-[0.8rem] md:bottom-1 group-hover:translate-x-1 transition-transform" />
+                </Show>
+            </button>
         </div>
-      </div>
 
-      <FloatingInput label="E-mail" type="email" required />
-      
-      <div class="md:col-span-2">
-        <FloatingInput label="Company Name" required />
-      </div>
-
-      {/* Bottom Action: 修改布局 */}
-      <div class="md:col-span-2 flex flex-col md:flex-row justify-between items-center md:items-end mt-2 md:mt-4 gap-4 md:gap-8">
-          {/* 移动端: 隐私协议放在按钮下方，且字号变小 */}
-          <div class="order-2 md:order-1 text-center md:text-left">
-            <p class="text-[10px] text-gray-400 leading-tight">
-                By clicking Submit you agree to our <br class="hidden md:block"/>
-                <strong class="text-gray-500 underline decoration-gray-300">Privacy Policy</strong> terms
-            </p>
-          </div>
-          
-          {/* 移动端: 按钮高度 py-3 (原 py-4)，更紧凑 */}
-          <button class="order-1 md:order-2 relative bg-orange-500 text-white text-left w-full md:w-60 py-3 md:py-4 px-6 rounded-md group transition-all border-none appearance-none cursor-pointer outline-none shadow-lg shadow-orange-500/20">
-              <span class="text-sm font-bold tracking-wide">Submit</span>
-              <div class="i-mdi-light-chevron-right text-xl absolute right-4 bottom-[0.8rem] md:bottom-1 group-hover:translate-x-1 transition-transform" />
-          </button>
-      </div>
-      
-    </section>
+      </section>
+    </>
   );
 };
 
-// 浮动标签子组件 (优化版)
-const FloatingInput: Component<{ label: string; required?: boolean; type?: string }> = (props) => (
-  // pb-1 减少底部内边距
+// 浮动标签子组件
+const FloatingInput: Component<{
+  label: string;
+  required?: boolean;
+  type?: string;
+  value?: string;
+  onInput?: (v: string) => void;
+}> = (props) => (
   <div class="relative border-b border-gray-200 focus-within:border-[#1a2b4b] transition-colors pb-1 w-full">
     <input
       type={props.type || 'text'}
       placeholder=" "
-      // 移动端字号调整: text-[16px] 避免 iOS 自动缩放，且更紧凑
+      value={props.value ?? ''}
+      onInput={(e) => props.onInput?.(e.currentTarget.value)}
       class="peer w-full bg-transparent outline-none border-none appearance-none p-0 m-0 text-[16px] md:text-[20px] font-light leading-normal"
     />
     <label class="absolute left-0 top-0 text-[16px] md:text-[20px] text-gray-400 transition-all duration-200 pointer-events-none truncate max-w-full
@@ -194,8 +332,6 @@ const FloatingInput: Component<{ label: string; required?: boolean; type?: strin
                   peer-[:not(:placeholder-shown)]:-top-4 peer-[:not(:placeholder-shown)]:text-[10px] peer-[:not(:placeholder-shown)]:uppercase">
       {props.label} {props.required && <span class="text-[#ff6b4a]">*</span>}
     </label>
-    
-    {/* 修改 3: 移除 mt-4，改为 mt-1。原先的 mt-4 浪费了每个输入框约 16px 的高度 */}
     <div class="w-full h-px border-0 mt-1"/>
   </div>
 );
