@@ -775,11 +775,12 @@ const App: Component = () => {
           </div>
           {/* section4 — fully triggered animations */}
           <div ref={sec4Ref} class="absolute inset-0 flex justify-end">
-            <div class="w-full md:w-[50%] lg:w-[40%] flex flex-col gap-6 h-screen justify-between bg-[#1a1e3a]/80 p-4">
-              <div class="relative">
+            <div class="w-full md:w-[50%] lg:w-[40%] flex flex-col gap-6 h-screen justify-center lg:justify-between bg-[#1a1e3a]/80 p-4">
+              <div class="grid">
                 {sec4Data.map((item, i) => (
                   <h1
                     class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-white"
+                    style={{ "grid-area": "1/1" }}
                   >
                     <SplitText text={item.title} chars={sec4TitleChars[i]} />
                   </h1>
@@ -787,10 +788,11 @@ const App: Component = () => {
               </div>
               <div>
                 <div class="w-full h-2 border border-solid border-b-0 border-white/50" />
-                <div class="relative mt-4">
+                <div class="grid mt-4">
                   {sec4Data.map((item, i) => (
                     <p
                       class="text-base font-light text-white"
+                      style={{ "grid-area": "1/1" }}
                     >
                       <SplitText text={item.desc} chars={sec4DescChars[i]} />
                     </p>
@@ -810,11 +812,12 @@ const App: Component = () => {
           </div>
           {/* section6 — triggered animations */}
           <div ref={sec6Ref} class="absolute inset-0 flex justify-end">
-            <div class="w-full md:w-[50%] lg:w-[40%] flex flex-col gap-6 h-screen justify-between bg-[#1a1e3a]/80 p-4">
-              <div class="relative">
+            <div class="w-full md:w-[50%] lg:w-[40%] flex flex-col gap-6 h-screen justify-center lg:justify-between bg-[#1a1e3a]/80 p-4">
+              <div class="grid">
                 {sec6Data.map((item, i) => (
                   <h1
                     class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-white"
+                    style={{ "grid-area": "1/1" }}
                   >
                     <SplitText text={item.title} chars={sec6TitleChars[i]} />
                   </h1>
@@ -822,10 +825,11 @@ const App: Component = () => {
               </div>
               <div>
                 <div class="w-full h-2 border border-solid border-b-0 border-white/50" />
-                <div class="relative mt-4">
+                <div class="grid mt-4">
                   {sec6Data.map((item, i) => (
                     <p
                       class="text-base font-light text-white leading-tight"
+                      style={{ "grid-area": "1/1" }}
                     >
                       <SplitText text={item.desc} chars={sec6DescChars[i]} />
                     </p>
