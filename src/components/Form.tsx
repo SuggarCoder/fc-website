@@ -332,7 +332,7 @@ const FloatingInput: Component<{
                   peer-[:not(:placeholder-shown)]:-top-4 peer-[:not(:placeholder-shown)]:text-[10px] peer-[:not(:placeholder-shown)]:uppercase">
       {props.label} {props.required && <span class="text-[#ff6b4a]">*</span>}
     </label>
-    <div class="w-full h-px border-0 mt-1"/>
+    <div style="width: 100%; height: 2px; border: 1px solid gray; border-top: none; margin-top: 10px;"></div>
   </div>
 );
 
