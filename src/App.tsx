@@ -636,6 +636,29 @@ const App: Component = () => {
     // Post-processing
     const post = createComposer(renderer, scene, camera, PostParams);
 
+    // 修复手机端: 点击 input 时浏览器自动滚动导致 blackOverlay 偏移
+    let lockedScrollY = -1;
+    const handleFormFocusIn = () => {
+      lockedScrollY = window.scrollY;
+      const restoreScroll = () => {
+        if (lockedScrollY >= 0 && window.scrollY !== lockedScrollY) {
+          window.scrollTo(0, lockedScrollY);
+        }
+      };
+      requestAnimationFrame(restoreScroll);
+      setTimeout(restoreScroll, 50);
+      setTimeout(restoreScroll, 150);
+      setTimeout(restoreScroll, 300);
+    };
+    const handleFormFocusOut = (e: FocusEvent) => {
+      // 只在焦点离开 whiteOverlay 时解锁
+      if (!whiteOverlayRef!.contains(e.relatedTarget as Node)) {
+        lockedScrollY = -1;
+      }
+    };
+    whiteOverlayRef!.addEventListener('focusin', handleFormFocusIn);
+    whiteOverlayRef!.addEventListener('focusout', handleFormFocusOut);
+
     // Resize handler
     const handleResize = () => {
       const width = window.innerWidth;
@@ -719,6 +742,8 @@ const App: Component = () => {
 
       gsap.ticker.remove(animate);
       window.removeEventListener('resize', handleResize);
+      whiteOverlayRef!.removeEventListener('focusin', handleFormFocusIn);
+      whiteOverlayRef!.removeEventListener('focusout', handleFormFocusOut);
       mouseParallax.dispose();
       scrollSystem.dispose();
       controls.dispose();

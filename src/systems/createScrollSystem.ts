@@ -32,6 +32,11 @@ export const createScrollSystem = (): ScrollSystem => {
         smoothWheel: true,
       });
 
+      // 防止手机键盘弹出时 resize 触发 ScrollTrigger 重新计算
+      ScrollTrigger.config({
+        autoRefreshEvents: 'visibilitychange,DOMContentLoaded,load',
+      });
+
       // Connect Lenis → ScrollTrigger
       lenis.on('scroll', ScrollTrigger.update);
       gsap.ticker.add((time) => { lenis?.raf(time * 1000); });
