@@ -733,7 +733,7 @@ const App: Component = () => {
       <div ref={containerRef} class="fixed inset-0 w-full h-full" />
       <div ref={pinRef} class="relative w-full h-screen">
           <div ref={whiteOverlayRef} class="absolute inset-0 bg-white z-40" style={{ transform: 'translateY(100%)' }} >
-            <div class="flex flex-col p-4 pt-16 sm:p-6 sm:pt-16 md:p-8 lg:p-20 lg:pt-20 gap-8 md:gap-12">
+            <div class="flex flex-col p-4 pt-16 sm:p-6 md:p-8 lg:p-20 lg:pt-20 gap-8 md:gap-12">
               <h1 class="text-4xl sm:text-5xl md:text-7xl lg:text-9xl">Request <br />A Connect</h1>
               <div></div>
               <div class="flex flex-col md:flex-row gap-12 justify-between">
@@ -775,11 +775,11 @@ const App: Component = () => {
           </div>
           {/* section4 — fully triggered animations */}
           <div ref={sec4Ref} class="absolute inset-0 flex justify-end">
-            <div class="w-full md:w-[50%] lg:w-[40%] flex flex-col gap-6 h-screen justify-between bg-[#1a1e3a]/80 p-4 pt-16 lg:pt-4">
+            <div class="w-full md:w-[50%] lg:w-[40%] flex flex-col gap-6 h-screen justify-between bg-[#1a1e3a]/80 p-4">
               <div class="relative">
                 {sec4Data.map((item, i) => (
                   <h1
-                    class={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-white leading-tight ${i > 0 ? 'absolute top-0 left-0 right-0' : ''}`}
+                    class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-white"
                   >
                     <SplitText text={item.title} chars={sec4TitleChars[i]} />
                   </h1>
@@ -790,7 +790,7 @@ const App: Component = () => {
                 <div class="relative mt-4">
                   {sec4Data.map((item, i) => (
                     <p
-                      class={`text-base font-light text-white leading-tight ${i > 0 ? 'absolute top-0 left-0 right-0' : ''}`}
+                      class="text-base font-light text-white"
                     >
                       <SplitText text={item.desc} chars={sec4DescChars[i]} />
                     </p>
@@ -810,11 +810,11 @@ const App: Component = () => {
           </div>
           {/* section6 — triggered animations */}
           <div ref={sec6Ref} class="absolute inset-0 flex justify-end">
-            <div class="w-full md:w-[50%] lg:w-[40%] flex flex-col gap-6 h-screen justify-between bg-[#1a1e3a]/80 p-4 pt-16 lg:pt-4">
+            <div class="w-full md:w-[50%] lg:w-[40%] flex flex-col gap-6 h-screen justify-between bg-[#1a1e3a]/80 p-4">
               <div class="relative">
                 {sec6Data.map((item, i) => (
                   <h1
-                    class={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-white leading-tight ${i > 0 ? 'absolute top-0 left-0 right-0' : ''}`}
+                    class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-white"
                   >
                     <SplitText text={item.title} chars={sec6TitleChars[i]} />
                   </h1>
@@ -825,7 +825,7 @@ const App: Component = () => {
                 <div class="relative mt-4">
                   {sec6Data.map((item, i) => (
                     <p
-                      class={`text-base font-light text-white leading-tight ${i > 0 ? 'absolute top-0 left-0 right-0' : ''}`}
+                      class="text-base font-light text-white leading-tight"
                     >
                       <SplitText text={item.desc} chars={sec6DescChars[i]} />
                     </p>

@@ -41,19 +41,19 @@ importers:
         version: 66.6.0
       '@unocss/vite':
         specifier: ^66.6.0
-        version: 66.6.0(vite@7.3.1(jiti@2.6.1))
+        version: 66.6.0(vite@7.3.1(jiti@2.6.1)(terser@5.46.0))
       solid-devtools:
         specifier: ^0.34.3
-        version: 0.34.5(solid-js@1.9.11)(vite@7.3.1(jiti@2.6.1))
+        version: 0.34.5(solid-js@1.9.11)(vite@7.3.1(jiti@2.6.1)(terser@5.46.0))
       typescript:
         specifier: ^5.9.2
         version: 5.9.3
       vite:
         specifier: ^7.1.4
-        version: 7.3.1(jiti@2.6.1)
+        version: 7.3.1(jiti@2.6.1)(terser@5.46.0)
       vite-plugin-solid:
         specifier: ^2.11.8
-        version: 2.11.10(solid-js@1.9.11)(vite@7.3.1(jiti@2.6.1))
+        version: 2.11.10(solid-js@1.9.11)(vite@7.3.1(jiti@2.6.1)(terser@5.46.0))
 
 packages:
 
@@ -324,6 +324,9 @@ packages:
   '@jridgewell/resolve-uri@3.1.2':
     resolution: {integrity: sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==}
     engines: {node: '>=6.0.0'}
+
+  '@jridgewell/source-map@0.3.11':
+    resolution: {integrity: sha512-ZMp1V8ZFcPG5dIWnQLr3NSI1MiCU7UETdS/A0G8V/XWHvJv3ZsFqutJn1Y5RPmAPX6F3BiE397OqveU/9NCuIA==}
 
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
@@ -616,6 +619,9 @@ packages:
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
 
+  buffer-from@1.1.2:
+    resolution: {integrity: sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==}
+
   camera-controls@3.1.2:
     resolution: {integrity: sha512-xkxfpG2ECZ6Ww5/9+kf4mfg1VEYAoe9aDSY+IwF0UEs7qEzwy0aVRfs2grImIECs/PoBtWFrh7RXsQkwG922JA==}
     engines: {node: '>=22.0.0', npm: '>=10.5.1'}
@@ -631,6 +637,9 @@ packages:
 
   colorette@2.0.20:
     resolution: {integrity: sha512-IfEDxwoWIjkeXL1eXcDiow4UbKjhLdq6/EuSVR9GMN7KVH3r9gQ83e73hsz1Nd1T3ijd5xv1wcWRYO+D6kCI2w==}
+
+  commander@2.20.3:
+    resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==}
 
   confbox@0.1.8:
     resolution: {integrity: sha512-RMtmw0iFkeR4YV+fUOSucriAQNb9g8zFR52MWCtl+cCZOFRNL6zeB395vPzFhEjjn4fMxXudmELnl/KF/WrK6w==}
@@ -856,6 +865,18 @@ packages:
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
+
+  source-map-support@0.5.21:
+    resolution: {integrity: sha512-uBHU3L3czsIyYXKX88fdrGovxdSCoTGDRZ6SYXtSRxLZUzHg5P/66Ht6uoUlHu9EZod+inXhKo3qQgwXUT/y1w==}
+
+  source-map@0.6.1:
+    resolution: {integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==}
+    engines: {node: '>=0.10.0'}
+
+  terser@5.46.0:
+    resolution: {integrity: sha512-jTwoImyr/QbOWFFso3YoU3ik0jBBDJ6JTOQiy/J2YxVJdZCc+5u7skhNwiOR3FQIygFqVUPHl7qbbxtjW2K3Qg==}
+    engines: {node: '>=10'}
+    hasBin: true
 
   three@0.182.0:
     resolution: {integrity: sha512-GbHabT+Irv+ihI1/f5kIIsZ+Ef9Sl5A1Y7imvS5RQjWgtTPfPnZ43JmlYI7NtCRDK9zir20lQpfg8/9Yd02OvQ==}
@@ -1187,6 +1208,12 @@ snapshots:
 
   '@jridgewell/resolve-uri@3.1.2': {}
 
+  '@jridgewell/source-map@0.3.11':
+    dependencies:
+      '@jridgewell/gen-mapping': 0.3.13
+      '@jridgewell/trace-mapping': 0.3.31
+    optional: true
+
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
   '@jridgewell/trace-mapping@0.3.31':
@@ -1444,7 +1471,7 @@ snapshots:
       '@unocss/core': 66.6.0
       magic-string: 0.30.21
 
-  '@unocss/vite@66.6.0(vite@7.3.1(jiti@2.6.1))':
+  '@unocss/vite@66.6.0(vite@7.3.1(jiti@2.6.1)(terser@5.46.0))':
     dependencies:
       '@jridgewell/remapping': 2.3.5
       '@unocss/config': 66.6.0
@@ -1455,7 +1482,7 @@ snapshots:
       pathe: 2.0.3
       tinyglobby: 0.2.15
       unplugin-utils: 0.3.1
-      vite: 7.3.1(jiti@2.6.1)
+      vite: 7.3.1(jiti@2.6.1)(terser@5.46.0)
 
   '@webgpu/types@0.1.69': {}
 
@@ -1487,6 +1514,9 @@ snapshots:
       node-releases: 2.0.27
       update-browserslist-db: 1.2.3(browserslist@4.28.1)
 
+  buffer-from@1.1.2:
+    optional: true
+
   camera-controls@3.1.2(three@0.182.0):
     dependencies:
       three: 0.182.0
@@ -1498,6 +1528,9 @@ snapshots:
       readdirp: 5.0.0
 
   colorette@2.0.20: {}
+
+  commander@2.20.3:
+    optional: true
 
   confbox@0.1.8: {}
 
@@ -1695,7 +1728,7 @@ snapshots:
       mrmime: 2.0.1
       totalist: 3.0.1
 
-  solid-devtools@0.34.5(solid-js@1.9.11)(vite@7.3.1(jiti@2.6.1)):
+  solid-devtools@0.34.5(solid-js@1.9.11)(vite@7.3.1(jiti@2.6.1)(terser@5.46.0)):
     dependencies:
       '@babel/core': 7.29.0
       '@babel/plugin-syntax-typescript': 7.28.6(@babel/core@7.29.0)
@@ -1704,7 +1737,7 @@ snapshots:
       '@solid-devtools/shared': 0.20.0(solid-js@1.9.11)
       solid-js: 1.9.11
     optionalDependencies:
-      vite: 7.3.1(jiti@2.6.1)
+      vite: 7.3.1(jiti@2.6.1)(terser@5.46.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -1724,6 +1757,23 @@ snapshots:
       - supports-color
 
   source-map-js@1.2.1: {}
+
+  source-map-support@0.5.21:
+    dependencies:
+      buffer-from: 1.1.2
+      source-map: 0.6.1
+    optional: true
+
+  source-map@0.6.1:
+    optional: true
+
+  terser@5.46.0:
+    dependencies:
+      '@jridgewell/source-map': 0.3.11
+      acorn: 8.15.0
+      commander: 2.20.3
+      source-map-support: 0.5.21
+    optional: true
 
   three@0.182.0: {}
 
@@ -1764,7 +1814,7 @@ snapshots:
       escalade: 3.2.0
       picocolors: 1.1.1
 
-  vite-plugin-solid@2.11.10(solid-js@1.9.11)(vite@7.3.1(jiti@2.6.1)):
+  vite-plugin-solid@2.11.10(solid-js@1.9.11)(vite@7.3.1(jiti@2.6.1)(terser@5.46.0)):
     dependencies:
       '@babel/core': 7.29.0
       '@types/babel__core': 7.20.5
@@ -1772,12 +1822,12 @@ snapshots:
       merge-anything: 5.1.7
       solid-js: 1.9.11
       solid-refresh: 0.6.3(solid-js@1.9.11)
-      vite: 7.3.1(jiti@2.6.1)
-      vitefu: 1.1.1(vite@7.3.1(jiti@2.6.1))
+      vite: 7.3.1(jiti@2.6.1)(terser@5.46.0)
+      vitefu: 1.1.1(vite@7.3.1(jiti@2.6.1)(terser@5.46.0))
     transitivePeerDependencies:
       - supports-color
 
-  vite@7.3.1(jiti@2.6.1):
+  vite@7.3.1(jiti@2.6.1)(terser@5.46.0):
     dependencies:
       esbuild: 0.27.3
       fdir: 6.5.0(picomatch@4.0.3)
@@ -1788,10 +1838,11 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
       jiti: 2.6.1
+      terser: 5.46.0
 
-  vitefu@1.1.1(vite@7.3.1(jiti@2.6.1)):
+  vitefu@1.1.1(vite@7.3.1(jiti@2.6.1)(terser@5.46.0)):
     optionalDependencies:
-      vite: 7.3.1(jiti@2.6.1)
+      vite: 7.3.1(jiti@2.6.1)(terser@5.46.0)
 
   vue-flow-layout@0.2.0: {}
 
