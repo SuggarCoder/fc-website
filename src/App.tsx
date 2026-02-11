@@ -875,7 +875,7 @@ const App: Component = () => {
         </div>
         <div class="absolute inset-0 flex flex-col justify-between overflow-hidden">
           <nav class="relative flex flex-col lg:flex-row items-stretch lg:items-start justify-between px-4 py-3 md:px-4 md:py-4 h-full lg:h-auto">
-            <div id="main" ref={mainRef} class="flex flex-row gap-4 items-start relative z-50">
+            <div id="main" ref={mainRef} class="flex flex-col md:flex-row lg:flex-row gap-4 items-start relative z-50">
 
               <div class="flex flex-row">
                 {/* Logo */}
@@ -895,7 +895,7 @@ const App: Component = () => {
               {/* Get Started */}
               <div
                 ref={getStartedRef}
-                class="relative bg-orange-500 text-white w-full sm:w-48 md:w-60 lg:w-80 rounded-md overflow-hidden cursor-pointer"
+                class="relative bg-orange-500 text-white w-1/2 sm:w-48 md:w-60 lg:w-80 rounded-md overflow-hidden cursor-pointer"
                 onMouseEnter={() => getStartedTl?.play()}
                 onMouseLeave={() => getStartedTl?.reverse()}
               >
