@@ -1,202 +1,182 @@
 import { onMount, onCleanup } from 'solid-js'
-import gsap from 'gsap'
 
+// --- 物理常数 ---
 const VELOCITY_DECAY = 0.85
 const PARTICLE_VEL_DECAY = 0.95
 const PARTICLE_DECAY = 0.97
 const SMOOTH_FACTOR = 0.1
+const MAX_PARTICLES = 150
+
+// --- 预设颜色 ---
+const COLORS = ['#ffba00', '#2a4198', '#ffffff']
 
 export default function CanvasGooey() {
   let canvasRef!: HTMLCanvasElement
-  let textRef!: SVGTextElement
-  let svgRef!: SVGSVGElement
+  
+  // 离屏 Canvas 用于生成带 Gooey 效果的粒子
+  const offscreenCanvas = document.createElement('canvas')
+  const octx = offscreenCanvas.getContext('2d', { alpha: true })!
 
   let particles: any[] = []
-  // 限制最大粒子数，防止手机端爆炸
-  const MAX_PARTICLES = 150
   let mouse = { x: 0, y: 0, sx: 0, sy: 0, vx: 0, vy: 0, svx: 0, svy: 0 }
   let head = { x: 0, y: 0, vx: 0, vy: 0 }
   let particleCnt = 0
   let rafId = 0
   let dpr = 1
 
+  let textConfig = { fontSize: 0, x: 0, y: 0, align: 'center' as CanvasTextAlign }
+
   const layout = () => {
     const nw = window.innerWidth
     const nh = window.innerHeight
-    // 移动端降低渲染倍率：手机上 1.5 足够，2 或 3 太吃力
-    dpr = Math.min(window.devicePixelRatio || 1, 1.5)
+    dpr = Math.min(window.devicePixelRatio || 1, 2)
     
-    // Fix Safari Blur: Set canvas internal dimensions based on DPR
-    canvasRef.width = nw * dpr
-    canvasRef.height = nh * dpr
-    // Canvas style remains 100% via Tailwind
-
-    const baseHeight = 1000
-    const dynamicWidth = (nw / nh) * baseHeight
-    svgRef.setAttribute('viewBox', `0 0 ${dynamicWidth} ${baseHeight}`)
+    canvasRef.width = offscreenCanvas.width = nw * dpr
+    canvasRef.height = offscreenCanvas.height = nh * dpr
 
     const isMobile = nw < 768
-    const tspans = textRef.querySelectorAll('tspan');
-
-    let fontSize: number;
-    let targetX: number;
-    let textAnchor: string;
-
     if (isMobile) {
-      fontSize = Math.min(dynamicWidth * 0.18, 160); 
-      targetX = dynamicWidth / 2;
-      textAnchor = "middle";
-      gsap.set(textRef, { attr: { y: 350 } });
-      tspans.forEach(tspan => gsap.set(tspan, { attr: { x: targetX, dy: "1.1em" } }));
+      textConfig.fontSize = Math.min(nw * 0.22, 90) * dpr
+      textConfig.x = (nw / 2) * dpr
+      textConfig.y = (nh * 0.45) * dpr
+      textConfig.align = 'center'
     } else {
-      fontSize = 280 + (nw > 1400 ? (nw - 1400) * 0.05 : 0);
-      fontSize = Math.min(fontSize, 350); 
-      const padding = dynamicWidth * 0.06;
-      targetX = dynamicWidth - padding;
-      textAnchor = "end";
-      gsap.set(textRef, { attr: { y: 450 } });
-      tspans.forEach(tspan => gsap.set(tspan, { attr: { x: targetX, dy: "1em" } }));
+      textConfig.fontSize = Math.min(220 + (nw - 1400) * 0.05, 300) * dpr
+      textConfig.x = (nw * 0.92) * dpr
+      textConfig.y = (nh * 0.5) * dpr
+      textConfig.align = 'right'
     }
-
-    gsap.set(textRef, { 
-      attr: { x: targetX, "font-size": fontSize, "text-anchor": textAnchor } 
-    });
-  }
-
-  // --- Physics & Draw (DPR adjusted) ---
-  const updatePhysics = (time: number, width: number, height: number) => {
-    mouse.sx += (mouse.x - mouse.sx) * SMOOTH_FACTOR; mouse.sy += (mouse.y - mouse.sy) * SMOOTH_FACTOR
-    mouse.svx += (mouse.vx - mouse.svx) * SMOOTH_FACTOR; mouse.svy += (mouse.vy - mouse.svy) * SMOOTH_FACTOR
-    mouse.vx *= VELOCITY_DECAY; mouse.vy *= VELOCITY_DECAY
-    
-    const oldHx = head.x, oldHy = head.y
-    head.x = width * 0.5 + width * 0.35 * Math.cos(time * 0.0008)
-    head.y = height * 0.5 + width * 0.15 * Math.cos(time * 0.0013)
-    head.vx = oldHx - head.x; head.vy = oldHy - head.y
-    
-    const diff = Math.hypot(mouse.x - mouse.sx, mouse.y - mouse.sy)
-    if (diff > 0.1) spawn(mouse.sx, mouse.sy, -mouse.svx * 0.25, -mouse.svy * 0.25, diff * 0.25)
-    else spawn(head.x, head.y, head.vx * 2, head.vy * 2, Math.hypot(head.vx, head.vy) * 15 + 25)
   }
 
   const spawn = (x: number, y: number, vx: number, vy: number, size: number) => {
     if (size < 1 || particles.length > MAX_PARTICLES) return
-    particles.push({ x, y, vx, vy, size, color: `hsl(${particleCnt % 360}, 100%, 50%)`, seed: Math.random() * 1000 })
-    particleCnt += 1.5
+    
+    // 随机选择你指定的三个颜色之一
+    const color = COLORS[Math.floor(Math.random() * COLORS.length)]
+    
+    particles.push({ 
+      x, y, vx, vy, 
+      size, 
+      color, 
+      seed: Math.random() * 1000 
+    })
+    particleCnt++
   }
 
   const draw = (ctx: CanvasRenderingContext2D, time: number) => {
-    // 不要在这里 setTransform，在 layout 里处理好坐标即可
-    ctx.clearRect(0, 0, canvasRef.width, canvasRef.height)
+    const { width, height } = canvasRef
+
+    // --- 1. 离屏 Canvas: 绘制 Gooey 粒子 ---
+    octx.clearRect(0, 0, width, height)
+    octx.save()
+    // 关键：Gooey 滤镜处理
+    octx.filter = 'blur(15px) contrast(25)' 
     
-    // 使用倒序遍历优化删除性能
     for (let i = particles.length - 1; i >= 0; i--) {
-      const p = particles[i]; 
-      p.x += p.vx + Math.cos((time + p.seed) * 0.01) * 0.5; 
+      const p = particles[i]
+      p.x += p.vx + Math.cos((time + p.seed) * 0.01) * 0.5
       p.y += p.vy + Math.sin((time + p.seed) * 0.01) * 0.5
-      p.vx *= PARTICLE_VEL_DECAY; 
-      p.vy *= PARTICLE_VEL_DECAY; 
+      p.vx *= PARTICLE_VEL_DECAY
+      p.vy *= PARTICLE_VEL_DECAY
       p.size *= PARTICLE_DECAY
-      
-      if (p.size < 0.5) {
+
+      if (p.size < 0.8) {
         particles.splice(i, 1)
         continue
       }
 
-      ctx.beginPath()
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-      ctx.fillStyle = p.color
-      ctx.fill()
+      octx.beginPath()
+      octx.arc(p.x * dpr, p.y * dpr, p.size * dpr, 0, Math.PI * 2)
+      octx.fillStyle = p.color
+      octx.fill()
     }
+    octx.restore()
+
+    // --- 2. 主画布合成 ---
+    ctx.clearRect(0, 0, width, height)
+
+    const drawText = () => {
+      ctx.font = `900 ${textConfig.fontSize}px Inter, system-ui, sans-serif`
+      ctx.textAlign = textConfig.align
+      ctx.textBaseline = 'middle'
+      const lines = ["FLOAT", "CAPITAL"]
+      lines.forEach((line, i) => {
+        ctx.fillText(line, textConfig.x, textConfig.y + (i * textConfig.fontSize * 0.95))
+      })
+    }
+
+    // A. 绘制黑色底色文字（默认镂空效果）
+    ctx.save()
+    ctx.fillStyle = '#000000'
+    drawText()
+    ctx.restore()
+
+    // B. 将粒子“剪切”并“覆盖”在黑色文字上
+    // source-atop: 只在现有内容（黑色文字）上绘制，且保留文字范围以外的透明
+    ctx.save()
+    ctx.globalCompositeOperation = 'source-atop'
+    ctx.drawImage(offscreenCanvas, 0, 0)
+    ctx.restore()
   }
 
   onMount(() => {
     const ctx = canvasRef.getContext('2d', { alpha: true })!
-    const onResize = () => layout()
-    // 鼠标/触摸移动逻辑优化：减少计算频率
+    
     const updateMouse = (nx: number, ny: number) => {
-      mouse.vx += mouse.x - nx; mouse.vy += mouse.y - ny
+      mouse.vx = (mouse.x - nx) * 0.5; mouse.vy = (mouse.y - ny) * 0.5
       mouse.x = nx; mouse.y = ny
     }
 
+    const onMouseMove = (e: MouseEvent) => updateMouse(e.clientX, e.clientY)
     const onTouchMove = (e: TouchEvent) => {
-    updateMouse(e.touches[0].clientX, e.touches[0].clientY)
+      if (e.touches[0]) updateMouse(e.touches[0].clientX, e.touches[0].clientY)
     }
-    const onMouseMove = (e: MouseEvent) => {
-    updateMouse(e.clientX, e.clientY)
-    }
-    
-    window.addEventListener('resize', onResize)
+
+    window.addEventListener('resize', layout)
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('touchmove', onTouchMove, { passive: true })
     
     layout()
-    rafId = requestAnimationFrame(function tick(time) {
-      updatePhysics(time, window.innerWidth, window.innerHeight)
+    
+    const tick = (time: number) => {
+      // 鼠标逻辑
+      mouse.sx += (mouse.x - mouse.sx) * SMOOTH_FACTOR
+      mouse.sy += (mouse.y - mouse.sy) * SMOOTH_FACTOR
+      mouse.svx += (mouse.vx - mouse.svx) * SMOOTH_FACTOR
+      mouse.svy += (mouse.vy - mouse.svy) * SMOOTH_FACTOR
+      
+      const mDiff = Math.hypot(mouse.x - mouse.sx, mouse.y - mouse.sy)
+      if (mDiff > 1) {
+        spawn(mouse.sx, mouse.sy, -mouse.svx, -mouse.svy, mDiff * 0.4)
+      } else {
+        // 自动浮动游走逻辑
+        const sw = window.innerWidth, sh = window.innerHeight
+        const tx = sw * 0.5 + sw * 0.3 * Math.cos(time * 0.001)
+        const ty = sh * 0.5 + sh * 0.2 * Math.sin(time * 0.0008)
+        spawn(tx, ty, Math.cos(time * 0.01) * 2, Math.sin(time * 0.01) * 2, 25)
+      }
+
       draw(ctx, time)
       rafId = requestAnimationFrame(tick)
-    })
+    }
+    
+    rafId = requestAnimationFrame(tick)
 
     onCleanup(() => {
       cancelAnimationFrame(rafId)
-      window.removeEventListener('resize', onResize)
+      window.removeEventListener('resize', layout)
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('touchmove', onTouchMove)
     })
   })
 
   return (
-    <div class="fixed inset-0 overflow-hidden bg-[linear-gradient(to_top,#213f6d,#2a4198)] ">
-        {/* The "Gooey" filter container */}
-        <div 
-            class="absolute inset-0 w-full h-full"
-            style={{ 
-                filter: 'url(#goo)', 
-                "-webkit-filter": 'url(#goo)',
-                "mix-blend-mode": "lighten" // Better for Safari hardware acceleration
-            }}
-        >
-            <canvas 
-                ref={canvasRef} 
-                class="absolute inset-0 w-full h-full opacity-90" 
-                style={{ filter: 'blur(12px)', "-webkit-filter": 'blur(12px)',"will-change": "transform" }}
-            />
-        </div>
-
-        {/* The Text as an exclusion layer */}
-        <svg ref={svgRef} class="absolute inset-0 w-full h-full">
-            <defs>
-                {/* Standard SVG Gooey Filter - most compatible across mobile */}
-                <filter id="goo">
-                    <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
-                    <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo" />
-                    <feComposite in="SourceGraphic" in2="goo" operator="atop" />
-                </filter>
-                
-                {/* Clipping logic: instead of CSS mask, we use the SVG mask strictly inside SVG */}
-                <mask id="safari-mask">
-                    <rect width="100%" height="100%" fill="white" />
-                    <text 
-                        ref={textRef} 
-                        fill="black" 
-                        font-weight="900" 
-                        font-family="Inter, sans-serif"
-                        style={{ "letter-spacing": "-0.04em" }}
-                    >
-                        FLOAT
-                        <tspan x="0" dy="1em">CAPITAL</tspan>
-                    </text>
-                </mask>
-            </defs>
-            
-            {/* This rect acts as a "curtain" with the text cut out */}
-            <rect 
-                width="100%" height="100%" 
-                fill="#0a0a0a" 
-                mask="url(#safari-mask)" 
-                class="pointer-events-none"
-            />
-        </svg>
+    <div class="fixed inset-0 overflow-hidden bg-[linear-gradient(to_top,#213f6d,#2a4198)]">
+      <canvas 
+        ref={canvasRef} 
+        class="block w-full h-full pointer-events-none" 
+        style={{ "will-change": "transform" }}
+      />
     </div>
   )
 }
