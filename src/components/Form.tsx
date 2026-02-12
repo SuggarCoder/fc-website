@@ -38,7 +38,7 @@ const Toast: Component<{ message: string; type: ToastType; visible: boolean }> =
   const bgColor = () => {
     switch (props.type) {
       case 'loading': return 'bg-[#1a2b4b]';
-      case 'success': return 'bg-green-600';
+      case 'success': return 'bg-orange-500';
       case 'error': return 'bg-red-500';
     }
   };

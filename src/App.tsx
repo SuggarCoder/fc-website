@@ -16,90 +16,22 @@ import { mapRange } from './utils/helpers';
 import SplitText from './components/SplitText';
 import Form from './components/Form';
 import CanvasGooey from './components/GooeyText';
+import { defaultSiteData } from './config/siteData';
+import type { SiteData, MenuSection } from './config/siteData';
 
-const menuData = [
-  {
-    label: 'Proposition',
-    content: () => (
-      <ul class="flex flex-col gap-3 px-8 list-none">
-        <li class="text-white/60 text-base leading-relaxed text-xl">Instant Cross-Border Transfers</li>
-        <p class="text-white/40">Settle transactions in minutes not days.</p>
-        <li class="text-white/60 text-base leading-relaxed text-xl">Lower Transaction Costs</li>
-        <p class="text-white/40">Reduce fees compared to traditional correspondent banking networks.</p>
-        <li class="text-white/60 text-base leading-relaxed text-xl">Global Reach</li>
-        <p class="text-white/40">Move capital across countries and currencies without geographical limitations.</p>
-        <li class="text-white/60 text-base leading-relaxed text-xl">Institution-Grade Security</li>
-        <p class="text-white/40">Advanced custody, encryption, and risk controls.</p>
-      </ul>
-    ),
-  },
-  {
-    label: 'Products & Services',
-    content: () => (
-      <ul class="flex flex-col gap-3 px-8 list-none">
-        <li class="text-white/60 text-base leading-relaxed text-xl">Cross-Border Payments</li>
-        <p class="text-white/40">Send and receive funds globally using crypto rails while settling in local or digital currencies.</p>
-        <li class="text-white/60 text-base leading-relaxed text-xl">Treasury & Liquidity Management</li>
-        <p class="text-white/40">Optimize capital allocation, manage digital asset liquidity, and streamline treasury operations across regions.</p>
-        <li class="text-white/60 text-base leading-relaxed text-xl">On/Off-Ramp Solutions</li>
-        <p class="text-white/40">Seamlessly convert between fiat and digital assets with transparent pricing and fast settlement.</p>
-      </ul>
-    ),
-  },
-  {
-    label: 'How It Works',
-    content: () => (
-      <ul class="flex flex-col gap-3 px-8 list-none">
-        <li class="text-white/60 text-base leading-relaxed text-xl">Initiate Transfer</li>
-        <p class="text-white/40">Submit a payment or settlement request via API or dashboard.</p>
-        <li class="text-white/60 text-base leading-relaxed text-xl">Crypto Rail Settlement</li>
-        <p class="text-white/40">Funds are transferred using secure blockchain infrastructure.</p>
-        <li class="text-white/60 text-base leading-relaxed text-xl">Local Payout</li>
-        <p class="text-white/40">Receive funds in the desired currency or digital asset.</p>
-      </ul>
-    ),
-  },
-  {
-    label: 'Connect',
-    content: () => (
-      <ul class="flex flex-col gap-3 px-8 list-none">
-        <li class="text-white/60 text-base leading-relaxed text-xl">Multi-layer custody and wallet security</li>
-        <li class="text-white/60 text-base leading-relaxed text-xl">Real-time transaction monitoring</li>
-        <li class="text-white/60 text-base leading-relaxed text-xl">Regulatory-aligned operations across jurisdictions</li>
-      </ul>
-    ),
-  },
-];
-
-const sec4Data = [
-  {
-    title: 'Infrastructure Incubation',
-    desc: "Float Capital incubates blockchain projects at the architectural level—focusing on DAG-based frameworks, scalable protocol design, and foundational infrastructure. We help teams build systems capable of handling parallel execution, dynamic growth, and evolving market behavior.",
-  },
-  {
-    title: 'AI-Driven Multi-Layer Trading Systems',
-    desc: 'We support and develop AI agent–based trading systems that operate across multiple layers—protocol, liquidity, volatility, and strategy. These agents adapt in real time, navigating intersections and responding to shifts before they become visible.',
-  },
-  {
-    title: 'Strategic Capital Deployment',
-    desc: "Float Capital deploys capital at structural inflection points—where technology, team, and timing align. Our investment philosophy focuses on durability over hype, backing systems designed to extend beyond initial acceleration and maintain long-term market presence.",
-  },
-];
-
-const sec6Data = [
-  {
-    title: 'Initiate Transfer',
-    desc: "Every transaction begins with a clear intent: moving capital across borders with precision and control. Through Flow Capital’s dashboard or API, clients initiate a payment or settlement request by defining the amount, destination, currency, and settlement preferences. Our system immediately validates the request structure and parameters, ensuring accuracy before execution. Whether triggered manually or programmatically, each transfer enters a unified workflow designed for speed and reliability. From the first interaction, clients gain full visibility into the transaction lifecycle, setting the foundation for a seamless and transparent cross-border experience.",
-  },
-  {
-    title: 'Crypto Rail Settlement',
-    desc: 'Once initiated, funds move onto Flow Capital’s crypto-powered settlement rails. Instead of passing through multiple correspondent banks, transactions are routed through secure blockchain infrastructure, enabling near real-time settlement and continuous availability. This architecture reduces delays, minimizes intermediaries, and enhances transparency throughout the transfer. Each movement is cryptographically secured and traceable, providing a clear record of settlement progress. By leveraging blockchain as a settlement layer—not speculation—Flow Capital delivers faster finality and more efficient capital movement across global markets.',
-  },
-  {
-    title: 'Local Payout',
-    desc: "With settlement complete, funds arrive at their final destination. Flow Capital enables local payout in the client’s chosen currency or digital asset, delivering predictable settlement outcomes and clear confirmation. Whether converting to fiat, retaining digital assets, or redistributing capital internally, payouts are executed efficiently and transparently. Clients receive full reporting and transaction records, supporting reconciliation, audit, and treasury operations. The result is a complete end-to-end flow—capital initiated globally, settled securely, and delivered locally with speed and confidence.",
-  },
-];
+/** Render menu section items as JSX */
+const renderMenuContent = (section: MenuSection) => (
+  <ul class="flex flex-col gap-3 px-8 list-none">
+    <For each={section.items}>
+      {(item) => (
+        <>
+          <li class="text-white/60 text-base leading-relaxed text-xl">{item.title}</li>
+          {item.desc && <p class="text-white/40">{item.desc}</p>}
+        </>
+      )}
+    </For>
+  </ul>
+);
 
 const App: Component = () => {
   let containerRef: HTMLDivElement | undefined;
@@ -136,6 +68,15 @@ const App: Component = () => {
   const [drawer2Open, setDrawer2Open] = createSignal(false);
   const [pathReady, setPathReady] = createSignal(false);
   const [isMobile, setIsMobile] = createSignal(window.innerWidth < 768);
+
+  // Dynamic site data (loaded from API, fallback to defaults)
+  const [site, setSite] = createSignal<SiteData>(defaultSiteData);
+
+  // Load dynamic data
+  fetch('/api/admin/data')
+    .then(r => r.json())
+    .then(json => { if (json.data) setSite(json.data); })
+    .catch(() => {});
 
   // Char refs collected from SplitText components
   const heroChars: HTMLSpanElement[] = [];
@@ -762,7 +703,7 @@ const App: Component = () => {
               <h1 class="text-4xl sm:text-5xl md:text-7xl lg:text-9xl">Request <br />A Connect</h1>
               <div></div>
               <div class="flex flex-col md:flex-row gap-12 justify-between">
-                <div class="text-lg md:text-2xl lg:text-3xl">For other inquiries, please contact us at <br /> infor@floatcapital.com</div>
+                <div class="text-lg md:text-2xl lg:text-3xl">For other inquiries, please contact us at <br /> {site().contactEmail}</div>
                 <div class="flex flex-row">
                   <Form/>
                 </div>
@@ -782,11 +723,11 @@ const App: Component = () => {
           <div ref={sec2Ref} class="absolute inset-0 flex justify-end px-4 md:px-8" style={{ opacity: 0 }}>
             <div class="w-full sm:w-2/3 md:w-1/2 lg:w-1/3 flex flex-col gap-6 h-screen justify-center">
               <p class="text-xs font-light text-white leading-tight">
-                <SplitText text="Engineering Direction in Decentralized Markets." chars={sec2Chars} />
+                <SplitText text={site().sec2Title} chars={sec2Chars} />
               </p>
               <div ref={sec2LineRef} class="w-full h-2 border border-solid border-b-0 border-white/50" style={{ opacity: 0 }} />
               <p class="text-gray-300 text-sm md:text-base lg:text-lg leading-relaxed">
-                <SplitText text="Float Capital incubates and invests in next-generation blockchain systems—where architecture, intelligence, and capital align to create scalable infrastructure, autonomous market dynamics, and long-term structural value across decentralized economies." chars={sec2Chars} />
+                <SplitText text={site().sec2Desc} chars={sec2Chars} />
               </p>
             </div>
           </div>
@@ -802,7 +743,7 @@ const App: Component = () => {
           <div ref={sec4Ref} class="absolute inset-0 flex justify-end">
             <div class="w-full md:w-[50%] lg:w-[40%] flex flex-col gap-6 h-screen justify-center lg:justify-between bg-[#1a1e3a]/80 p-4">
               <div class="grid">
-                {sec4Data.map((item, i) => (
+                {site().sec4Data.map((item, i) => (
                   <h1
                     class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-white"
                     style={{ "grid-area": "1/1" }}
@@ -814,7 +755,7 @@ const App: Component = () => {
               <div>
                 <div class="w-full h-2 border border-solid border-b-0 border-white/50" />
                 <div class="grid mt-4">
-                  {sec4Data.map((item, i) => (
+                  {site().sec4Data.map((item, i) => (
                     <p
                       class="text-base font-light text-white"
                       style={{ "grid-area": "1/1" }}
@@ -839,7 +780,7 @@ const App: Component = () => {
           <div ref={sec6Ref} class="absolute inset-0 flex justify-end">
             <div class="w-full md:w-[50%] lg:w-[40%] flex flex-col gap-6 h-screen justify-center lg:justify-between bg-[#1a1e3a]/80 p-4">
               <div class="grid">
-                {sec6Data.map((item, i) => (
+                {site().sec6Data.map((item, i) => (
                   <h1
                     class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-white"
                     style={{ "grid-area": "1/1" }}
@@ -851,7 +792,7 @@ const App: Component = () => {
               <div>
                 <div class="w-full h-2 border border-solid border-b-0 border-white/50" />
                 <div class="grid mt-4">
-                  {sec6Data.map((item, i) => (
+                  {site().sec6Data.map((item, i) => (
                     <p
                       class="text-base font-light text-white leading-tight"
                       style={{ "grid-area": "1/1" }}
@@ -869,7 +810,7 @@ const App: Component = () => {
           <div ref={backdropRef} class="absolute inset-0 bg-[#0d1033]/80" />
           <div ref={panelRef} class="absolute left-0 top-0 h-full bg-[#0d1033]/95 backdrop-blur-md overflow-y-auto flex items-center" style={{ transform: 'translateX(-100%)' }}>
             <nav class="flex flex-col gap-2 px-6" onMouseLeave={hideDrawer2}>
-              <For each={menuData}>
+              <For each={site().menuData}>
                 {(item, i) => (
                   <a class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white/70 hover:text-white transition-colors cursor-pointer py-2 flex items-center gap-2"
                     onMouseEnter={(e) => showDrawer2(i(), e)}
@@ -894,7 +835,7 @@ const App: Component = () => {
           {/* Drawer2 — 描述面板，clip-path 从左向右延伸 */}
           <div ref={drawer2Ref} class="absolute top-0 h-full bg-[#0d1033]/90 backdrop-blur-md flex items-center justify-center invisible">
             <Show when={activeIndex() >= 0}>
-              {menuData[activeIndex()].content()}
+              {renderMenuContent(site().menuData[activeIndex()])}
             </Show>
           </div>
         </div>
@@ -958,7 +899,7 @@ const App: Component = () => {
           <div ref={descRef} class="relative px-4 md:px-4 mt-8 md:mt-16 lg:mt-24 gap-8 lg:gap-0" >
             <div class="bg-[#1a1e3a]/80 backdrop-blur-sm rounded-lg max-w-3xl flex flex-col justify-between mb-8 p-4 h-auto min-h-[20vh] md:h-[30vh]">
               <p class="text-gray-300 text-sm md:text-base lg:text-xl leading-relaxed">
-                <SplitText text="Float Capital focuses on next-generation blockchain systems built on DAG-based architectures, enabling parallel processing, higher throughput, and non-linear scalability. These structures reflect how real markets evolve—not as a single chain, but as multiple paths forming simultaneously. We incubate projects where infrastructure is designed for complexity from day one." chars={descChars} />
+                <SplitText text={site().descText} chars={descChars} />
               </p>
               <div data-flicker-btn class="bg-white/10 mt-6 w-10 h-10 flex items-center justify-center rounded-md text-gray hover:text-white transition-colors self-end cursor-pointer" onClick={() => scrollSystem?.scrollToProgress(0.144)}>
                 <span class="i-mdi-light-chevron-down text-2xl" />
