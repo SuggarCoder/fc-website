@@ -27,7 +27,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (e: any) {
-    console.error('Admin data handler error:', e);
     return res.status(500).json({ error: e.message || 'Internal server error' });
   }
 }
@@ -83,7 +82,6 @@ async function handlePut(req: VercelRequest, res: VercelResponse) {
 
   if (!response.ok) {
     const errText = await response.text();
-    console.error('Edge Config write failed:', response.status, errText);
     return res.status(502).json({ error: `Edge Config write failed (${response.status})` });
   }
 

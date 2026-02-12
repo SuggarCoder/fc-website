@@ -556,7 +556,6 @@ const App: Component = () => {
       const startTarget = cameraPath.getTargetAt(0);
       controls.setLookAt(startPos.x, startPos.y, startPos.z, startTarget.x, startTarget.y, startTarget.z, false);
     }).catch((err) => {
-      console.warn('[App] Using fallback preloader path:', err);
       setPathReady(true);
     });
 

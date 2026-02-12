@@ -71,8 +71,6 @@ export const createCameraPath = (): CameraPathSystem => {
               lookCurve = new THREE.CatmullRomCurve3(targetPoints);
             }
 
-            console.log(`[CameraPath] Loaded ${positionPoints.length} position points, ${targetPoints.length} target points`);
-
             isReady = true;
             readyCallbacks.forEach(cb => cb());
             readyCallbacks = [];
@@ -80,7 +78,6 @@ export const createCameraPath = (): CameraPathSystem => {
           },
           undefined,
           (error) => {
-            console.error('[CameraPath] Failed to load camera.glb:', error);
             reject(error);
           }
         );
